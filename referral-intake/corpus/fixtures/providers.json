@@ -1,0 +1,164 @@
+[
+  {
+    "id": "DR000",
+    "first_name": "Danielle",
+    "last_name": "Strand",
+    "npi": "3845370576",
+    "practice": "Sutter Creek Primary Care",
+    "phone": "(238) 838-2225",
+    "fax": "(805) 860-3881"
+  },
+  {
+    "id": "DR001",
+    "first_name": "Simone",
+    "last_name": "Beaumont",
+    "npi": "1121882116",
+    "practice": "Copperfield Internal Medicine",
+    "phone": "(317) 345-3350",
+    "fax": "(329) 246-2804"
+  },
+  {
+    "id": "DR002",
+    "first_name": "Simone",
+    "last_name": "Halvorsen",
+    "npi": "1909800629",
+    "practice": "Sutter Creek Primary Care",
+    "phone": "(983) 408-8372",
+    "fax": "(793) 556-4011"
+  },
+  {
+    "id": "DR003",
+    "first_name": "Danielle",
+    "last_name": "Beaumont",
+    "npi": "2350737864",
+    "practice": "Riverbend Family Medicine",
+    "phone": "(328) 766-1916",
+    "fax": "(692) 904-9729"
+  },
+  {
+    "id": "DR004",
+    "first_name": "Terrence",
+    "last_name": "Kaur",
+    "npi": "3408048783",
+    "practice": "Copperfield Internal Medicine",
+    "phone": "(283) 289-2648",
+    "fax": "(222) 358-1420"
+  },
+  {
+    "id": "DR005",
+    "first_name": "Terrence",
+    "last_name": "Beaumont",
+    "npi": "9224288636",
+    "practice": "Northline Orthopedics",
+    "phone": "(915) 890-9902",
+    "fax": "(978) 979-4735"
+  },
+  {
+    "id": "DR006",
+    "first_name": "Simone",
+    "last_name": "Castellanos",
+    "npi": "4901094886",
+    "practice": "Riverbend Family Medicine",
+    "phone": "(771) 549-8334",
+    "fax": "(714) 473-4611"
+  },
+  {
+    "id": "DR007",
+    "first_name": "Owen",
+    "last_name": "Nagata",
+    "npi": "1581054453",
+    "practice": "Copperfield Internal Medicine",
+    "phone": "(968) 267-6438",
+    "fax": "(727) 304-6884"
+  },
+  {
+    "id": "DR008",
+    "first_name": "Hector",
+    "last_name": "Halvorsen",
+    "npi": "7453878622",
+    "practice": "Northline Orthopedics",
+    "phone": "(471) 245-2890",
+    "fax": "(873) 788-7640"
+  },
+  {
+    "id": "DR009",
+    "first_name": "Simone",
+    "last_name": "Rourke",
+    "npi": "5774075894",
+    "practice": "Kestrel Women's Health",
+    "phone": "(673) 867-4613",
+    "fax": "(371) 757-1022"
+  },
+  {
+    "id": "DR010",
+    "first_name": "Owen",
+    "last_name": "Halvorsen",
+    "npi": "4080851726",
+    "practice": "Kestrel Women's Health",
+    "phone": "(543) 887-8596",
+    "fax": "(912) 352-6346"
+  },
+  {
+    "id": "DR011",
+    "first_name": "Anya",
+    "last_name": "Castellanos",
+    "npi": "8006945546",
+    "practice": "Ellsworth Neurology Associates",
+    "phone": "(298) 817-1622",
+    "fax": "(887) 873-4576"
+  },
+  {
+    "id": "DR012",
+    "first_name": "Renee",
+    "last_name": "Kaur",
+    "npi": "0873951038",
+    "practice": "Ellsworth Neurology Associates",
+    "phone": "(584) 663-4818",
+    "fax": "(240) 664-1498"
+  },
+  {
+    "id": "DR013",
+    "first_name": "Nadia",
+    "last_name": "Castellanos",
+    "npi": "7823525465",
+    "practice": "Kestrel Women's Health",
+    "phone": "(581) 422-3529",
+    "fax": "(226) 616-4936"
+  },
+  {
+    "id": "DR014",
+    "first_name": "Owen",
+    "last_name": "Adeyemi",
+    "npi": "3724921226",
+    "practice": "Copperfield Internal Medicine",
+    "phone": "(821) 242-2388",
+    "fax": "(318) 209-7439"
+  },
+  {
+    "id": "DR015",
+    "first_name": "Yolanda",
+    "last_name": "Nagata",
+    "npi": "8880064620",
+    "practice": "Sutter Creek Primary Care",
+    "phone": "(858) 449-2229",
+    "fax": "(327) 515-4675"
+  },
+  {
+    "id": "DR016",
+    "first_name": "Renee",
+    "last_name": "Castellanos",
+    "npi": "0737768750",
+    "practice": "Copperfield Internal Medicine",
+    "phone": "(634) 295-3790",
+    "fax": "(618) 535-6072"
+  },
+  {
+    "id": "DR017",
+    "first_name": "Junko",
+    "last_name": "Adeyemi",
+    "npi": "1580413833",
+    "practice": "Northline Orthopedics",
+    "phone": "(426) 634-8444",
+    "fax": "(330) 940-2479"
+  }
+]

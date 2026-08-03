@@ -1,0 +1,53 @@
+[
+  {
+    "name": "Meridian Health",
+    "payor_id": "MRDN01",
+    "member_id_regex": "^MH[0-9]{9}$",
+    "member_id_format": "MH + 9 digits",
+    "auth_required_modalities": [
+      "MR",
+      "CT",
+      "PT"
+    ],
+    "auth_packet_requires": [
+      "clinical_notes",
+      "prior_imaging"
+    ],
+    "submission_channel": "portal",
+    "turnaround_days": 3
+  },
+  {
+    "name": "Cascade Mutual",
+    "payor_id": "CASC02",
+    "member_id_regex": "^[0-9]{11}$",
+    "member_id_format": "11 digits",
+    "auth_required_modalities": [
+      "MR",
+      "PT"
+    ],
+    "auth_packet_requires": [
+      "clinical_notes"
+    ],
+    "submission_channel": "fax",
+    "turnaround_days": 5
+  },
+  {
+    "name": "Northgate Plan",
+    "payor_id": "NRTH03",
+    "member_id_regex": "^NG-[A-Z0-9]{8}$",
+    "member_id_format": "NG- + 8 alphanumeric",
+    "auth_required_modalities": [
+      "MR",
+      "CT",
+      "PT",
+      "NM"
+    ],
+    "auth_packet_requires": [
+      "clinical_notes",
+      "prior_imaging",
+      "conservative_treatment_attestation"
+    ],
+    "submission_channel": "fax",
+    "turnaround_days": 2
+  }
+]
