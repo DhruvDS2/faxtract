@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+corpus/out/*.pdf
+corpus/out/ground_truth.json
+uploads/
+packets/
+ris/orders.json
+evals/results.json
+node_modules/
+dist/

@@ -1,0 +1,146 @@
+{
+  "studies": [
+    {
+      "cpt": "72148",
+      "description": "MRI lumbar spine without contrast",
+      "modality": "MR",
+      "laterality_required": false,
+      "service_type_code": "62",
+      "supporting_icd10": [
+        "M54.16",
+        "M51.36",
+        "M54.5",
+        "G95.9"
+      ]
+    },
+    {
+      "cpt": "70553",
+      "description": "MRI brain with and without contrast",
+      "modality": "MR",
+      "laterality_required": false,
+      "service_type_code": "62",
+      "supporting_icd10": [
+        "R51.9",
+        "G43.909",
+        "R42",
+        "D33.2"
+      ]
+    },
+    {
+      "cpt": "73721",
+      "description": "MRI lower extremity joint without contrast",
+      "modality": "MR",
+      "laterality_required": true,
+      "service_type_code": "62",
+      "supporting_icd10": [
+        "M25.561",
+        "M23.51",
+        "S83.241A",
+        "M17.11"
+      ]
+    },
+    {
+      "cpt": "71260",
+      "description": "CT chest with contrast",
+      "modality": "CT",
+      "laterality_required": false,
+      "service_type_code": "4",
+      "supporting_icd10": [
+        "R91.1",
+        "R05.3",
+        "J98.4",
+        "R59.1"
+      ]
+    },
+    {
+      "cpt": "74177",
+      "description": "CT abdomen and pelvis with contrast",
+      "modality": "CT",
+      "laterality_required": false,
+      "service_type_code": "4",
+      "supporting_icd10": [
+        "R10.9",
+        "R10.31",
+        "K57.30",
+        "R19.00"
+      ]
+    },
+    {
+      "cpt": "73200",
+      "description": "CT upper extremity without contrast",
+      "modality": "CT",
+      "laterality_required": true,
+      "service_type_code": "4",
+      "supporting_icd10": [
+        "S52.501A",
+        "M25.521",
+        "M79.641"
+      ]
+    },
+    {
+      "cpt": "77066",
+      "description": "Diagnostic mammography bilateral",
+      "modality": "MG",
+      "laterality_required": false,
+      "service_type_code": "4",
+      "supporting_icd10": [
+        "N63.0",
+        "N64.59",
+        "R92.8"
+      ]
+    },
+    {
+      "cpt": "76700",
+      "description": "Ultrasound abdomen complete",
+      "modality": "US",
+      "laterality_required": false,
+      "service_type_code": "4",
+      "supporting_icd10": [
+        "R10.11",
+        "K80.20",
+        "R16.0"
+      ]
+    }
+  ],
+  "icd10": {
+    "M54.16": "Radiculopathy, lumbar region",
+    "M51.36": "Other intervertebral disc degeneration, lumbar region",
+    "M54.5": "Low back pain",
+    "G95.9": "Disease of spinal cord, unspecified",
+    "R51.9": "Headache, unspecified",
+    "G43.909": "Migraine, unspecified, not intractable",
+    "R42": "Dizziness and giddiness",
+    "D33.2": "Benign neoplasm of brain, unspecified",
+    "M25.561": "Pain in right knee",
+    "M23.51": "Chronic instability of knee, right knee",
+    "S83.241A": "Other tear of medial meniscus, current injury, right knee, initial encounter",
+    "M17.11": "Unilateral primary osteoarthritis, right knee",
+    "R91.1": "Solitary pulmonary nodule",
+    "R05.3": "Chronic cough",
+    "J98.4": "Other disorders of lung",
+    "R59.1": "Generalized enlarged lymph nodes",
+    "R10.9": "Unspecified abdominal pain",
+    "R10.31": "Right lower quadrant pain",
+    "K57.30": "Diverticulosis of large intestine without perforation or abscess",
+    "R19.00": "Intra-abdominal and pelvic swelling, mass and lump, unspecified site",
+    "S52.501A": "Unspecified fracture of the lower end of right radius, initial encounter",
+    "M25.521": "Pain in right elbow",
+    "M79.641": "Pain in right hand",
+    "N63.0": "Unspecified lump in unspecified breast",
+    "N64.59": "Other signs and symptoms in breast",
+    "R92.8": "Other abnormal and inconclusive findings on diagnostic imaging of breast",
+    "R10.11": "Right upper quadrant pain",
+    "K80.20": "Calculus of gallbladder without cholecystitis without obstruction",
+    "R16.0": "Hepatomegaly, not elsewhere classified"
+  },
+  "clinic": {
+    "name": "Hollis Park Imaging",
+    "npi": "2715970010",
+    "address": "1400 Ashgrove Blvd, Suite 200",
+    "city": "White Plains",
+    "state": "NY",
+    "zip": "10601",
+    "phone": "(914) 555-0142",
+    "fax": "(914) 555-0143"
+  }
+}

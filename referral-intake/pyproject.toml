@@ -1,0 +1,21 @@
+[project]
+name = "referral-intake"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic",
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic>=2",
+    "python-multipart",
+    "pdf2image",
+    "pytesseract",
+    "pillow",
+    "numpy",
+    "reportlab",
+    "mcp",
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
