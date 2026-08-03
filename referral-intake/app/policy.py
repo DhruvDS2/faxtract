@@ -1,7 +1,13 @@
-import json
+import re
 from pathlib import Path
 
+from app.validate import ICD10, STUDIES
+
 POLICY_DIR = Path(__file__).parent.parent / "corpus" / "policies"
+
+
+def _words(text):
+    return set(re.findall(r"[a-z]{4,}", text.lower()))
 
 
 def load_policies():
@@ -16,11 +22,22 @@ def load_policies():
 
 
 def retrieve(payor_name, cpt_code, icd10_codes, k=2):
-    """TODO(claude-code): return the k most relevant policy chunks for this
-    payor + CPT + ICD combination.
+    docs = load_policies()
 
-    Start with keyword overlap. With four short documents per payor it may score
-    identically to embeddings, and noticing that is worth more than adding a
-    vector store because it is expected. Only reach for embeddings if keyword
-    retrieval measurably misses."""
-    raise NotImplementedError
+    study = STUDIES.get(cpt_code or "")
+    terms = set()
+    if study:
+        terms |= _words(study["description"])
+    for code in icd10_codes:
+        terms |= _words(ICD10.get(code, code))
+
+    scored = []
+    for d in docs:
+        if payor_name and payor_name.lower() not in d["text"].lower():
+            continue
+        overlap = len(terms & _words(d["text"]))
+        if overlap:
+            scored.append((overlap, d))
+
+    scored.sort(key=lambda s: s[0], reverse=True)
+    return [d for _, d in scored[:k]]
