@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 
+import anthropic
 from pdf2image import convert_from_path
 
 from app.models import Referral
@@ -56,14 +57,46 @@ def ocr_baseline(pdf_path):
     return "\n".join(pytesseract.image_to_string(img) for img in pdf_to_images(pdf_path, dpi=300))
 
 
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = anthropic.Anthropic()
+    return _client
+
+
+def _strip_fences(text):
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    return text.strip()
+
+
 def extract(pdf_path) -> tuple[Referral, dict]:
-    """
-    TODO(claude-code): call the Anthropic API with PROMPT plus one image block per page,
-    parse the JSON response into Referral, and return (referral, usage).
+    pages = pdf_to_images(pdf_path)
+    content = [
+        {"type": "image",
+         "source": {"type": "base64", "media_type": "image/png", "data": image_to_b64(img)}}
+        for img in pages
+    ]
+    content.append({"type": "text", "text": PROMPT})
 
-    usage should be {"input_tokens": int, "output_tokens": int}.
+    response = _get_client().messages.create(
+        model=MODEL,
+        max_tokens=2000,
+        messages=[{"role": "user", "content": content}],
+    )
 
-    Keep the raw response text on disk next to the pdf as <name>.raw.json — you will
-    want it when a field comes out wrong and you are debugging live.
-    """
-    raise NotImplementedError
+    raw = response.content[0].text
+    Path(pdf_path).with_suffix(".raw.json").write_text(raw)
+
+    data = json.loads(_strip_fences(raw))
+    referral = Referral(**{k: v for k, v in data.items() if v != ""})
+
+    usage = {"input_tokens": response.usage.input_tokens,
+             "output_tokens": response.usage.output_tokens}
+    return referral, usage
