@@ -13,6 +13,7 @@ dependencies = [
     "pillow",
     "numpy",
     "reportlab",
+    "matplotlib",
     "mcp",
     "pytest",
 ]
