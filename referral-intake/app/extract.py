@@ -76,6 +76,23 @@ def _strip_fences(text):
     return text.strip()
 
 
+def _to_referral(data) -> Referral:
+    conf = data.pop("confidence", {}) or {}
+    conf = {k: float(v) for k, v in conf.items() if isinstance(v, (int, float))}
+
+    clean = {k: v for k, v in data.items() if v not in ("", None)}
+
+    sex = clean.get("patient_sex")
+    if isinstance(sex, str):
+        s = sex.strip().upper()
+        clean["patient_sex"] = "M" if s.startswith("M") else "F" if s.startswith("F") else "U"
+    for field in ("laterality", "urgency"):
+        if isinstance(clean.get(field), str):
+            clean[field] = clean[field].strip().lower()
+
+    return Referral(**clean, confidence=conf)
+
+
 def extract(pdf_path) -> tuple[Referral, dict]:
     pages = pdf_to_images(pdf_path)
     content = [
@@ -95,7 +112,7 @@ def extract(pdf_path) -> tuple[Referral, dict]:
     Path(pdf_path).with_suffix(".raw.json").write_text(raw)
 
     data = json.loads(_strip_fences(raw))
-    referral = Referral(**{k: v for k, v in data.items() if v != ""})
+    referral = _to_referral(data)
 
     usage = {"input_tokens": response.usage.input_tokens,
              "output_tokens": response.usage.output_tokens}

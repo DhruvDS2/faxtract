@@ -1,7 +1,10 @@
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+
+load_dotenv()
 
 from app.models import Correction, ProcessedReferral
 from app.pipeline import process, send_to_ris
