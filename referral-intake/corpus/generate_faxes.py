@@ -11,22 +11,39 @@ FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
 
 W, H = 1700, 2200
-FONT_DIR = "/usr/share/fonts/truetype/dejavu"
+FONT_CANDIDATES = {
+    "bold": [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+    ],
+    "regular": [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+    ],
+    "italic": [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf",
+        "/System/Library/Fonts/Supplemental/Times New Roman Italic.ttf",
+    ],
+}
+
+
+def _font(kind, size):
+    for path in FONT_CANDIDATES[kind]:
+        try:
+            return ImageFont.truetype(path, size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
 
 
 def load_fonts():
-    def f(name, size):
-        try:
-            return ImageFont.truetype(f"{FONT_DIR}/{name}", size)
-        except OSError:
-            return ImageFont.load_default()
     return {
-        "title": f("DejaVuSans-Bold.ttf", 44),
-        "head": f("DejaVuSans-Bold.ttf", 30),
-        "label": f("DejaVuSans-Bold.ttf", 24),
-        "body": f("DejaVuSans.ttf", 26),
-        "small": f("DejaVuSans.ttf", 20),
-        "hand": f("DejaVuSerif-Italic.ttf", 30),
+        "title": _font("bold", 44),
+        "head": _font("bold", 30),
+        "label": _font("bold", 24),
+        "body": _font("regular", 26),
+        "small": _font("regular", 20),
+        "hand": _font("italic", 30),
     }
 
 
