@@ -3,7 +3,9 @@ __pycache__/
 .venv/
 .env
 corpus/out/*.pdf
+corpus/out/*.raw.json
 corpus/out/ground_truth.json
+evals/*.png
 uploads/
 packets/
 ris/orders.json
