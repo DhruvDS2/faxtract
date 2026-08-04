@@ -1,0 +1,13 @@
+anthropic
+fastapi
+uvicorn[standard]
+pydantic>=2
+python-multipart
+pdf2image
+pytesseract
+pillow
+numpy
+reportlab
+matplotlib
+mcp
+pytest
