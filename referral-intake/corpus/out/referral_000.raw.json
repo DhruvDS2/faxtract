@@ -31,7 +31,7 @@
     "requested_study": 0.99,
     "laterality": 0.99,
     "cpt_code": 0.99,
-    "icd10_codes": 0.98,
+    "icd10_codes": 0.97,
     "clinical_indication": 0.97,
     "urgency": 0.99,
     "payor_name": 0.99,

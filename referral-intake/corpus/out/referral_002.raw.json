@@ -32,7 +32,7 @@
     "laterality": 0.99,
     "cpt_code": 0.98,
     "icd10_codes": 0.96,
-    "clinical_indication": 0.93,
+    "clinical_indication": 0.94,
     "urgency": 0.99,
     "payor_name": 0.97,
     "member_id": 0.95,
