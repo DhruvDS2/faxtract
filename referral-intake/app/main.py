@@ -1,8 +1,10 @@
+import io
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pdf2image import convert_from_path, pdfinfo_from_path
 
 load_dotenv()
 
@@ -36,6 +38,21 @@ def list_referrals():
 @app.get("/referrals/{referral_id}")
 def get_referral(referral_id: str):
     return REFERRALS[referral_id]
+
+
+@app.get("/referrals/{referral_id}/pagecount")
+def page_count(referral_id: str):
+    info = pdfinfo_from_path(REFERRALS[referral_id].source_file)
+    return {"count": info["Pages"]}
+
+
+@app.get("/referrals/{referral_id}/pages/{page}")
+def page_image(referral_id: str, page: int = 0):
+    images = convert_from_path(REFERRALS[referral_id].source_file, dpi=150)
+    idx = max(0, min(page, len(images) - 1))
+    buf = io.BytesIO()
+    images[idx].convert("RGB").save(buf, format="PNG")
+    return Response(content=buf.getvalue(), media_type="image/png")
 
 
 @app.patch("/referrals/{referral_id}")
