@@ -29,3 +29,13 @@ export const approve = (id: string) =>
   fetch(`${base}/referrals/${id}/approve`, { method: "POST" }).then((r) => r.json());
 export const reject = (id: string) =>
   fetch(`${base}/referrals/${id}/reject`, { method: "POST" }).then((r) => r.json());
+
+export const uploadReferral = (file: File) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  return fetch(`${base}/referrals`, { method: "POST", body: fd }).then((r) => r.json());
+};
+
+export const pageUrl = (id: string, page: number) => `${base}/referrals/${id}/pages/${page}`;
+export const pageCount = (id: string) =>
+  fetch(`${base}/referrals/${id}/pagecount`).then((r) => r.json());
