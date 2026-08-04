@@ -2,9 +2,14 @@ import argparse
 import json
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+from app.models import Referral
 from app.pipeline import process
 from evals.report import write_report
 from evals.scoring import score_extraction, sweep_thresholds
+
+load_dotenv()
 
 CORPUS = Path(__file__).parent.parent / "corpus" / "out"
 
@@ -38,14 +43,18 @@ def main():
 
     results = []
     for name in files:
-        processed = process(corpus / name)
-        results.append({
-            "file": name,
-            "referral": processed.referral,
-            "usage": processed.token_usage,
-            "timings": processed.stage_timings_ms,
-        })
-        print("processed", name, processed.status)
+        try:
+            processed = process(corpus / name)
+            results.append({
+                "file": name,
+                "referral": processed.referral,
+                "usage": processed.token_usage,
+                "timings": processed.stage_timings_ms,
+            })
+            print("processed", name, processed.status)
+        except Exception as e:
+            print("FAILED", name, "->", type(e).__name__, e)
+            results.append({"file": name, "referral": Referral(), "usage": {}, "timings": {}})
 
     n = len(results)
     accuracy = score_extraction(results, ground_truth)
