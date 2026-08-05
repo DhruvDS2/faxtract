@@ -12,3 +12,7 @@ ris/orders.json
 evals/results.json
 node_modules/
 dist/
+
+# python build artifacts
+*.egg-info/
+build/
