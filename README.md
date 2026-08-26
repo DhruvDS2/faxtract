@@ -235,6 +235,8 @@ scheduling; voice or telephony; retry queues / dead-letter handling / background
 synchronously); database migrations; Docker Compose for the whole stack; any integration with a
 real EHR or RIS product.
 
+Need a human-in-loop at 2 steps.
+
 ---
 
 ## Code style
