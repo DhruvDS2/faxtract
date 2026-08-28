@@ -24,4 +24,10 @@ class GraphState(BaseModel):
     retry_count: int = 0                     # RETRY: how many times we've re-read
     verification: dict | None = None         # VERIFY: the verifier's verdict
     human_correction: dict | None = None     # HUMAN REVIEW: where a reviewer's fix lands
-    retrieved_policy: str | None = None      # POLICY: the policy text, carried to BUILD PACKET
+    retrieved_policy: str | None = None      # POLICY: the top policy text, carried to BUILD PACKET
+
+    # --- RAG + downstream artifacts, filled by the v2 nodes ---
+    retrieved_citations: list | None = None  # POLICY: the chunks the packet cites
+    keywords: list | None = None             # POLICY: step-2 keywords (the 3-step's learned vocab)
+    packet_path: str | None = None           # PACKET: where the generated PDF landed
+    order_message: str | None = None         # ORDER: the HL7 ORM^O01 built for the RIS
