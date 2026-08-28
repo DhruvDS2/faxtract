@@ -1,8 +1,12 @@
 export type Flag = { field: string; severity: "error" | "warning"; message: string };
 
+/** A region of a page, normalized 0-1. Maps straight onto CSS percentages. */
+export type Box = { page: number; left: number; top: number; width: number; height: number };
+
 export type Referral = {
   [key: string]: any;
   confidence: Record<string, number>;
+  boxes?: Record<string, Box[]>;
 };
 
 export type ProcessedReferral = {

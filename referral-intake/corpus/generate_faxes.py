@@ -1,5 +1,6 @@
 import argparse
 import json
+import math
 import random
 from datetime import date, timedelta
 from pathlib import Path
@@ -50,6 +51,101 @@ def load_fonts():
 def blank():
     img = Image.new("L", (W, H), 255)
     return img, ImageDraw.Draw(img)
+
+
+class RecordingDraw:
+    """An ImageDraw that remembers every string it puts on the page.
+
+    The three templates render values through a dozen different call sites and
+    formats. Rather than thread bookkeeping through all of them, record what
+    actually lands on the page and match values against it afterwards.
+    """
+
+    def __init__(self, draw):
+        self._draw = draw
+        self.records = []
+
+    def text(self, xy, text, font=None, **kwargs):
+        if text:
+            self.records.append((str(text), font, float(xy[0]), float(xy[1])))
+        return self._draw.text(xy, text, font=font, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._draw, name)
+
+
+def _drawn_forms(field_name, value):
+    """The ways a field's value can appear on a page, most specific first."""
+    if value is None or value == "":
+        return []
+    if field_name == "icd10_codes":
+        return [", ".join(value)] + list(value)
+    if field_name == "urgency":
+        return [value.upper(), value]
+    if field_name == "patient_sex":
+        return [{"M": "Male", "F": "Female"}.get(value, value), value]
+    if field_name == "laterality":
+        return [value.upper(), value]
+    return [str(value)]
+
+
+def value_boxes(records, referral):
+    """Locate each field's value among the strings drawn, in 0-1 page coords.
+
+    Fields rendered as a checkbox rather than text (laterality on template_c)
+    have no string to find and are simply absent, which is honest: there is no
+    source region to point a reviewer at.
+    """
+    boxes = {}
+    for field_name, value in referral.items():
+        for form in _drawn_forms(field_name, value):
+            hit = next(((t, f, x, y) for t, f, x, y in records if form in t), None)
+            if hit is None:
+                continue
+            text, font, x, y = hit
+            start = text.index(form)
+            x0 = x + font.getlength(text[:start])
+            x1 = x0 + font.getlength(form)
+            ascent, descent = font.getmetrics()
+            boxes[field_name] = {
+                "left": x0 / W,
+                "top": y / H,
+                "width": (x1 - x0) / W,
+                "height": (ascent + descent) / H,
+            }
+            break
+    return boxes
+
+
+def rotate_boxes(boxes, angle):
+    """Move boxes with the page when degrade() rotates it.
+
+    Image.rotate(angle) turns the content counter-clockwise on screen, which in
+    image coordinates (y down) moves each source point by the clockwise matrix
+    below -- verified against a rendered marker. The subsequent downscale is
+    uniform, so normalized coordinates survive it untouched.
+    """
+    if not angle:
+        return boxes
+    theta = math.radians(angle)
+    cos, sin = math.cos(theta), math.sin(theta)
+
+    moved = {}
+    for field_name, box in boxes.items():
+        corners = [(box["left"], box["top"]),
+                   (box["left"] + box["width"], box["top"]),
+                   (box["left"], box["top"] + box["height"]),
+                   (box["left"] + box["width"], box["top"] + box["height"])]
+        points = []
+        for nx, ny in corners:
+            dx, dy = nx * W - W / 2, ny * H - H / 2
+            points.append((((W / 2) + dx * cos + dy * sin) / W,
+                           ((H / 2) - dx * sin + dy * cos) / H))
+        xs = [p[0] for p in points]
+        ys = [p[1] for p in points]
+        moved[field_name] = {"left": min(xs), "top": min(ys),
+                             "width": max(xs) - min(xs), "height": max(ys) - min(ys)}
+    return moved
 
 
 def field(d, fonts, x, y, label, value, width=520):
@@ -276,7 +372,7 @@ def degrade(img, rng, level):
     a = np.clip(a, 0, 255).astype("uint8")
     out = Image.fromarray(a)
     out = out.point(lambda p: 255 if p > 135 else 0, mode="1")
-    return out.convert("L")
+    return out.convert("L"), angle
 
 
 def make_referral(rng, fx, level):
@@ -360,18 +456,29 @@ def main():
 
     for i, level in enumerate(levels):
         r = make_referral(rng, fx, level)
-        img, d = blank()
+        img, raw = blank()
+        d = RecordingDraw(raw)
         tmpl = TEMPLATES[i % len(TEMPLATES)]
         tmpl(d, fonts, r)
+
+        # Capture where each value landed before the page is skewed and scaled.
+        boxes = value_boxes(d.records, r)
 
         if rng.random() < 0.15:
             img = annotate(img, fonts, rng)
 
-        page = degrade(img, rng, level)
+        page, angle = degrade(img, rng, level)
+        boxes = rotate_boxes(boxes, angle)
+
         pages = []
         if rng.random() < 0.20:
-            pages.append(degrade(cover_sheet(fonts, r), rng, "clean"))
+            cover, _ = degrade(cover_sheet(fonts, r), rng, "clean")
+            pages.append(cover)
         pages.append(page)
+
+        # The referral itself is always the last page; a cover sheet shifts it.
+        for box in boxes.values():
+            box["page"] = len(pages) - 1
 
         name = f"referral_{i:03d}.pdf"
         pages[0].save(out / name, "PDF", resolution=200.0,
@@ -380,6 +487,7 @@ def main():
         gt = {k: v for k, v in r.items() if k != "clinic"}
         gt["template"] = tmpl.__name__
         gt["pages"] = len(pages)
+        gt["boxes"] = boxes
         ground_truth[name] = gt
         print("wrote", name, level)
 

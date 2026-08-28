@@ -4,7 +4,7 @@ import unicodedata
 from app.models import Referral
 from app.validate import is_auto_approvable, validate
 
-SCORED_FIELDS = [f for f in Referral.model_fields if f != "confidence"]
+SCORED_FIELDS = [f for f in Referral.model_fields if f not in ("confidence", "boxes")]
 CRITICAL_FIELDS = ["patient_first_name", "patient_last_name", "patient_dob",
                    "cpt_code", "laterality", "icd10_codes", "member_id", "payor_name"]
 

@@ -36,7 +36,7 @@ export default function App() {
             Upload a faxed referral (PDF):{" "}
             <input type="file" accept="application/pdf" onChange={onUpload} disabled={uploading} />
           </label>
-          {uploading && <span style={{ marginLeft: 10, color: "#a60" }}>Claude is reading the fax…</span>}
+          {uploading && <span style={{ marginLeft: 10, color: "#a60" }}>Reading the fax…</span>}
           <button onClick={refresh} style={{ marginLeft: 12 }}>Refresh</button>
         </div>
       )}
