@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { approve, Box, correct, getReferral, pageCount, pageUrl, ProcessedReferral, reject } from "./api";
-import { useEffect, useState } from "react";
 import {
-  approve, Citation, correct, getOrder, getPolicy, getReferral,
+  approve, Box, Citation, correct, getOrder, getPolicy, getReferral,
   packetUrl, pageCount, pageUrl, ProcessedReferral, reject,
 } from "./api";
 
