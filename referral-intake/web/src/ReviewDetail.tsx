@@ -1,7 +1,52 @@
 import { useEffect, useState } from "react";
-import { approve, correct, getReferral, pageCount, pageUrl, ProcessedReferral, reject } from "./api";
+import {
+  approve, Citation, correct, getOrder, getPolicy, getReferral,
+  packetUrl, pageCount, pageUrl, ProcessedReferral, reject,
+} from "./api";
 
 const THRESHOLD = 0.85;
+
+function NotRequired() {
+  return (
+    <div style={{ padding: 16, background: "#f0f6f0", border: "1px solid #cfe0cf", borderRadius: 6, fontSize: 14 }}>
+      ✅ <b>Prior authorization not required</b> for this study under this plan — so there's no policy
+      lookup or auth packet. The order goes straight to the RIS.
+    </div>
+  );
+}
+
+function PolicyPanel({ id }: { id: string }) {
+  const [d, setD] = useState<{ required?: boolean; keywords: string[]; citations: Citation[] } | null>(null);
+  useEffect(() => { getPolicy(id).then(setD); }, [id]);
+  if (!d) return <p>Retrieving policy (3-step RAG)…</p>;
+  if (d.required === false) return <NotRequired />;
+  return (
+    <div>
+      <div style={{ marginBottom: 12, fontSize: 13 }}>
+        <b>Step-2 keywords the RAG learned:</b>{" "}
+        {d.keywords?.length ? d.keywords.join(", ") : "—"}
+      </div>
+      {d.citations.map((c, i) => (
+        <div key={i} style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12, marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: "#555", marginBottom: 6 }}>
+            {c.source} · score {c.score}
+          </div>
+          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", margin: 0, fontSize: 13 }}>{c.text}</pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OrderPanel({ id }: { id: string }) {
+  const [msg, setMsg] = useState("");
+  useEffect(() => { getOrder(id).then((r) => setMsg(r.message)); }, [id]);
+  return (
+    <pre style={{ background: "#0d1117", color: "#c9d1d9", padding: 12, overflow: "auto", fontSize: 12 }}>
+      {msg || "Building HL7 ORM^O01…"}
+    </pre>
+  );
+}
 
 export default function ReviewDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const [data, setData] = useState<ProcessedReferral | null>(null);
@@ -9,6 +54,7 @@ export default function ReviewDetail({ id, onBack }: { id: string; onBack: () =>
   const [pages, setPages] = useState(1);
   const [page, setPage] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [tab, setTab] = useState<"policy" | "packet" | "order">("policy");
 
   useEffect(() => { getReferral(id).then(setData); }, [id]);
   useEffect(() => {
@@ -78,6 +124,40 @@ export default function ReviewDetail({ id, onBack }: { id: string; onBack: () =>
             <button onClick={() => reject(id).then(onBack)}>Reject</button>
           </div>
         </div>
+      </div>
+
+      <div style={{ marginTop: 28 }}>
+        <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #ddd", marginBottom: 12 }}>
+          {([
+            ["policy", "🏥 Insurance Policy Docs"],
+            ["packet", "📄 Prior Auth Packet"],
+            ["order", "🩺 RIS Order (HL7)"],
+          ] as const).map(([t, label]) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              style={{
+                padding: "6px 12px", border: "none", cursor: "pointer",
+                background: tab === t ? "#eef2f8" : "transparent",
+                borderBottom: tab === t ? "2px solid #3366cc" : "2px solid transparent",
+                fontWeight: tab === t ? 700 : 400,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {tab === "policy" && <PolicyPanel id={id} />}
+        {tab === "packet" && (
+          data.auth?.required === false ? <NotRequired /> : (
+            <iframe
+              title="prior-auth-packet"
+              src={packetUrl(id)}
+              style={{ width: "100%", height: 700, border: "1px solid #ddd" }}
+            />
+          )
+        )}
+        {tab === "order" && <OrderPanel id={id} />}
       </div>
     </div>
   );
