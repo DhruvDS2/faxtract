@@ -39,3 +39,12 @@ export const uploadReferral = (file: File) => {
 export const pageUrl = (id: string, page: number) => `${base}/referrals/${id}/pages/${page}`;
 export const pageCount = (id: string) =>
   fetch(`${base}/referrals/${id}/pagecount`).then((r) => r.json());
+
+export type Citation = { source: string; score: number; text: string };
+export const getPolicy = (
+  id: string
+): Promise<{ required?: boolean; keywords: string[]; citations: Citation[] }> =>
+  fetch(`${base}/referrals/${id}/policy`).then((r) => r.json());
+export const packetUrl = (id: string) => `${base}/referrals/${id}/packet`;
+export const getOrder = (id: string): Promise<{ message: string }> =>
+  fetch(`${base}/referrals/${id}/order`).then((r) => r.json());
