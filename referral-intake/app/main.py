@@ -10,6 +10,10 @@ load_dotenv()
 from app.extract import pdf_page_count, pdf_to_images
 from app.models import Correction, ProcessedReferral
 from app.pipeline import process, send_to_ris
+from app.auth_packet import build_packet
+from app.hl7 import build_orm
+
+PACKETS = Path(__file__).parent.parent / "packets"
 
 app = FastAPI(title="Referral Intake")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -52,6 +56,60 @@ def page_image(referral_id: str, page: int = 0):
     buf = io.BytesIO()
     images[idx].convert("RGB").save(buf, format="PNG")
     return Response(content=buf.getvalue(), media_type="image/png")
+
+
+def _retrieve_for(processed):
+    from app import rag  # lazy: only load the embedding model when a policy panel is opened
+    r = processed.referral
+    indication = r.clinical_indication or r.requested_study or ""
+    codes = [c for c in [r.cpt_code, *r.icd10_codes] if c]
+    if not r.payor_name:
+        return {"keywords": [], "results": []}
+    return rag.retrieve_3step(indication, codes, r.payor_name, k=3)
+
+
+def _auth_required(processed):
+    return bool(processed.auth and processed.auth.required)
+
+
+@app.get("/referrals/{referral_id}/policy")
+def policy(referral_id: str):
+    processed = REFERRALS[referral_id]
+    if not _auth_required(processed):
+        return {"required": False, "keywords": [], "citations": []}
+    out = _retrieve_for(processed)
+    return {
+        "required": True,
+        "keywords": out["keywords"],
+        "citations": [
+            {"source": Path(ch["source"]).stem, "score": round(float(s), 3), "text": ch["text"]}
+            for ch, s in out["results"]
+        ],
+    }
+
+
+@app.get("/referrals/{referral_id}/packet")
+def packet(referral_id: str):
+    processed = REFERRALS[referral_id]
+    if not _auth_required(processed):
+        return Response(
+            content=b"No prior authorization required for this study; no packet generated.",
+            media_type="text/plain", status_code=409,
+        )
+    out = _retrieve_for(processed)
+    citations = [{"path": ch["source"], "text": ch["text"]} for ch, _ in out["results"]]
+    PACKETS.mkdir(exist_ok=True)
+    path = PACKETS / f"auth_{processed.referral.member_id or referral_id}.pdf"
+    build_packet(processed.referral, processed.eligibility, citations, path)
+    return Response(content=path.read_bytes(), media_type="application/pdf")
+
+
+@app.get("/referrals/{referral_id}/order")
+def order(referral_id: str):
+    processed = REFERRALS[referral_id]
+    rid = referral_id.upper()
+    msg = build_orm(processed.referral, "ORD" + rid, "MRN" + rid, "MSG" + rid)
+    return {"message": msg}
 
 
 @app.patch("/referrals/{referral_id}")
