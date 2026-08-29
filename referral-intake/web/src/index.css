@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Near-monochrome. Structure comes from spacing and weight, not from borders
+   and fills. Colour appears only where it carries meaning a reviewer must act
+   on: a failed validation, an unverified read, a dead policy.
+--------------------------------------------------------------------------- */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  --color-bg: #ffffff;
+  --color-panel: #ffffff;
+  --color-subtle: #f6f6f6;
+  --color-border: #ebebeb;
+
+  --color-fg: #121212;
+  --color-muted: #767676;
+  --color-faint: #a8a8a8;
+
+  --color-primary: #121212;
+  --color-primary-fg: #ffffff;
+
+  --color-red: #c8372b;
+  --color-amber: #a96a12;
+  --color-green: #197a4b;
+}
+
+.dark {
+  --color-bg: #0b0b0b;
+  --color-panel: #0f0f0f;
+  --color-subtle: #1a1a1a;
+  --color-border: #242424;
+
+  --color-fg: #f2f2f2;
+  --color-muted: #8f8f8f;
+  --color-faint: #5f5f5f;
+
+  --color-primary: #f2f2f2;
+  --color-primary-fg: #0b0b0b;
+
+  --color-red: #ef8279;
+  --color-amber: #d9a75c;
+  --color-green: #5fbf8e;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 1.5px solid var(--color-fg);
+    outline-offset: 1px;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border: 4px solid transparent;
+    background-clip: content-box;
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-faint);
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  /* Marks the region a value was read from, the moment the viewer jumps to it. */
+  @keyframes reveal {
+    from {
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-amber) 22%, transparent);
+    }
+    to {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+  .animate-reveal {
+    animation: reveal 1.1s ease-out;
+  }
+
+  /* The source region itself. A faxed scan is high-contrast noise, so a thin
+     hairline disappears into it -- this needs a heavy ring, a dark halo to
+     separate it from the page, and enough offset that the ring sits clear of
+     the glyphs instead of on top of them. */
+  .source-box {
+    outline: 3px solid var(--color-amber);
+    outline-offset: 3px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--color-amber) 26%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, black 45%, transparent),
+      0 0 14px 3px color-mix(in srgb, var(--color-amber) 55%, transparent);
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .animate-rise {
+    animation: rise 140ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .animate-fade {
+    animation: fade 120ms ease-out;
+  }
+
+  @keyframes panel {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -48%) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+  .animate-panel {
+    animation: panel 150ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @keyframes sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(400%);
+    }
+  }
+  .animate-sweep {
+    animation: sweep 1.2s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-reveal,
+    .animate-rise,
+    .animate-fade,
+    .animate-panel,
+    .animate-sweep {
+      animation: none;
+    }
+  }
+}
