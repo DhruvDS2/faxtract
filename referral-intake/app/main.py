@@ -1,4 +1,5 @@
 import io
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -49,12 +50,18 @@ def page_count(referral_id: str):
     return {"count": pdf_page_count(REFERRALS[referral_id].source_file)}
 
 
+# The corpus writes its PDFs at 200 dpi, so rendering the preview below that
+# threw away detail the page actually had. 300 keeps it legible at 4x zoom, and
+# greyscale roughly halves the bytes -- a scanned fax has no colour to lose.
+PREVIEW_DPI = int(os.getenv("PREVIEW_DPI", "300"))
+
+
 @app.get("/referrals/{referral_id}/pages/{page}")
 def page_image(referral_id: str, page: int = 0):
-    images = pdf_to_images(REFERRALS[referral_id].source_file, dpi=150)
+    images = pdf_to_images(REFERRALS[referral_id].source_file, dpi=PREVIEW_DPI)
     idx = max(0, min(page, len(images) - 1))
     buf = io.BytesIO()
-    images[idx].convert("RGB").save(buf, format="PNG")
+    images[idx].convert("L").save(buf, format="PNG", optimize=True)
     return Response(content=buf.getvalue(), media_type="image/png")
 
 

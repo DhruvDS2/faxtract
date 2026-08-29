@@ -6,7 +6,8 @@ subscribed to the service, and the IAM user missing permissions.
 
     python scripts/check_aws.py
 
-Costs one DetectDocumentText page (~$0.0015) when it gets far enough to try.
+Costs one AnalyzeDocument page (~$0.015) when it gets far enough to try -- the
+same call the extractor makes, so a pass here means uploads will work.
 """
 import io
 import os
@@ -55,9 +56,15 @@ def main():
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
 
+    # Deliberately AnalyzeDocument with a query, not the cheaper
+    # DetectDocumentText: this has to exercise the same call the extractor
+    # makes, or a policy that grants one and not the other reads as a failure
+    # when the app would have worked fine.
     try:
-        response = boto3.client("textract", region_name=region).detect_document_text(
-            Document={"Bytes": buffer.getvalue()}
+        response = boto3.client("textract", region_name=region).analyze_document(
+            Document={"Bytes": buffer.getvalue()},
+            FeatureTypes=["QUERIES"],
+            QueriesConfig={"Queries": [{"Text": "What is the patient name?", "Alias": "probe"}]},
         )
     except ClientError as e:
         code = e.response["Error"]["Code"]
@@ -68,8 +75,7 @@ def main():
                  "Activation is usually minutes but AWS allows up to 24 hours.")
         if code in ("AccessDeniedException", "UnrecognizedClientException"):
             fail(f"the IAM user cannot call Textract: {code}",
-                 "attach a policy allowing textract:AnalyzeDocument and "
-                 "textract:DetectDocumentText to this user")
+                 "attach a policy allowing textract:AnalyzeDocument to this user")
         fail(f"Textract returned {code}: {e.response['Error']['Message']}",
              "see the message above")
 
