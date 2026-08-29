@@ -77,12 +77,12 @@ Two outputs are the whole pitch:
 | Stage | Module | What it does |
 |---|---|---|
 | 1. Corpus | `corpus/generate_faxes.py` | Renders 60 synthetic referral PDFs from 6 clinic templates, degrades them to look like real faxes, writes `ground_truth.json` |
-| 2. Extraction | `app/extract.py` | Tesseract OCR baseline, then Claude vision extraction to a strict schema with per-field confidence |
+| 2. Extraction | `app/extract.py` | Tesseract OCR baseline, then Textract Queries extraction to a strict schema with per-field confidence and the source region each value was read from. `EXTRACTOR` switches engine: `textract`, `claude` (the original vision engine), or `fixture` (replays corpus ground truth offline) |
 | 3. Validation | `app/validate.py` | Deterministic rule checks (NPI Luhn, CPT/ICD catalog, laterality, member-ID regex, DOB, confidence threshold) |
 | 4. Eligibility | `app/edi.py`, `app/payor.py` | Hand-assembled X12 270, mock payor returns a 271, parsed back to a model |
 | 5. Policy | `app/policy.py` | Payor rules table + retrieval over synthetic medical-policy documents |
 | 6. Auth packet | `app/auth_packet.py` | Payor-specific prior-auth PDF citing the retrieved policy language |
-| 7. Review queue | `web/` | React queue + detail screens; logs every correction |
+| 7. Review queue | `web/` | React queue + detail screens; hovering or clicking a field highlights the region of the fax it came from; logs every correction |
 | 8. Order out | `app/hl7.py`, `app/mllp.py`, `ris/server.py` | Builds `ORM^O01`, sends over MLLP, mock RIS stores it and returns an ACK |
 | 9. Evals | `evals/run_evals.py` | Accuracy, threshold sweep, cost, latency → `results.json` + chart |
 | 10. MCP | `ris/mcp_server.py` | Exposes the RIS as MCP tools for conversational access |
@@ -93,7 +93,8 @@ Two outputs are the whole pitch:
 
 - **Python 3.11**, FastAPI, Pydantic v2
 - **Postgres** (SQLAlchemy)
-- **Anthropic API** — Claude Sonnet for extraction, Haiku for cheap subtasks
+- **Amazon Textract** (`boto3`) — Queries extraction: per-field confidence plus the bounding box each value came from
+- **Anthropic API** — Claude Sonnet, the alternate extraction engine (`EXTRACTOR=claude`)
 - **Tesseract** (`pytesseract`) for the OCR baseline
 - **pdf2image / Pillow** for rasterization and degradation
 - **ReportLab / WeasyPrint** for fax templates and auth packets
@@ -160,7 +161,7 @@ referral-intake/
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install fastapi uvicorn pydantic sqlalchemy psycopg2-binary anthropic \
+pip install fastapi uvicorn pydantic sqlalchemy psycopg2-binary boto3 anthropic \
             pytesseract pdf2image pillow reportlab weasyprint numpy mcp pytest
 
 # system deps
@@ -174,15 +175,36 @@ docker run -d --name referral-pg -e POSTGRES_PASSWORD=dev -p 5432:5432 postgres:
 cd web && npm create vite@latest . -- --template react-ts && npm install
 ```
 
-Copy `.env.example` to `.env` and fill in your `ANTHROPIC_API_KEY`:
+Copy `.env.example` to `.env` and fill in your AWS credentials:
 
 ```
-ANTHROPIC_API_KEY=
+EXTRACTOR=textract          # textract | claude | fixture (fixture needs no cloud account)
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+ANTHROPIC_API_KEY=          # only needed when EXTRACTOR=claude
 DATABASE_URL=postgresql://postgres:dev@localhost:5432/referral
 RIS_MLLP_HOST=localhost
 RIS_MLLP_PORT=2575
 CONFIDENCE_THRESHOLD=0.85
 ```
+
+The IAM user needs one permission, `textract:AnalyzeDocument`. Any credential
+source boto3 understands works -- the `.env` keys above, `~/.aws/credentials`,
+or an instance role. Run `python scripts/check_aws.py` to confirm access before
+uploading; it tells apart credentials that will not load, an account that is not
+subscribed to Textract, and an IAM user missing permissions.
+
+### Running without AWS
+
+`EXTRACTOR=fixture` replays the generated corpus instead of calling a cloud API,
+so the queue and the source-highlighting can be demonstrated with no account and
+no per-page cost. The bounding boxes are real -- `corpus/generate_faxes.py`
+records where it drew each value and carries those coordinates through the skew
+and downscale -- but **the confidence scores are fabricated**, derived from a
+hash so they stay stable and spread by each page's degradation level. The eval
+harness refuses this engine, since scoring replayed ground truth against ground
+truth would report perfect accuracy.
 
 ---
 

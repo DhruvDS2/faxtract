@@ -8,6 +8,20 @@ Urgency = Literal["routine", "urgent", "stat"]
 Severity = Literal["error", "warning"]
 
 
+class Box(BaseModel):
+    """A region of a page, normalized to 0-1 against that page's dimensions.
+
+    Textract returns geometry this way, which means the same numbers overlay
+    correctly on any rendering of the page regardless of DPI or zoom. The
+    review UI turns them straight into CSS percentages.
+    """
+    page: int = 0
+    left: float
+    top: float
+    width: float
+    height: float
+
+
 class Referral(BaseModel):
     patient_first_name: str | None = None
     patient_last_name: str | None = None
@@ -29,6 +43,7 @@ class Referral(BaseModel):
     group_id: str | None = None
     order_date: date | None = None
     confidence: dict[str, float] = Field(default_factory=dict)
+    boxes: dict[str, list[Box]] = Field(default_factory=dict)
 
 
 class Flag(BaseModel):

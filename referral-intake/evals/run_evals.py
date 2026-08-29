@@ -16,6 +16,10 @@ CORPUS = Path(__file__).parent.parent / "corpus" / "out"
 # Approximate Claude Sonnet pricing, dollars per million tokens. Adjust to current rates.
 PRICE_PER_MTOK = {"input": 3.0, "output": 15.0}
 
+# Textract Queries bills per page analyzed, per call: $15 per 1000 pages.
+# Nineteen fields exceed the 15-query sync limit, so each page costs two calls.
+PRICE_PER_TEXTRACT_CALL = 0.015
+
 
 def percentile(values, p):
     if not values:
@@ -33,6 +37,14 @@ def main():
     ap.add_argument("--out", default="evals")
     ap.add_argument("--limit", type=int, default=None, help="only run the first N referrals")
     args = ap.parse_args()
+
+    from app.extract import engine_name
+    if engine_name() == "fixture":
+        raise SystemExit(
+            "EXTRACTOR=fixture replays ground truth, so scoring it against ground "
+            "truth would report perfect accuracy and a meaningless threshold sweep. "
+            "Set EXTRACTOR=textract or EXTRACTOR=claude to run evals."
+        )
 
     corpus = Path(args.corpus)
     ground_truth = json.loads((corpus / "ground_truth.json").read_text())
@@ -62,10 +74,14 @@ def main():
 
     tot_in = sum(r["usage"].get("input_tokens", 0) for r in results)
     tot_out = sum(r["usage"].get("output_tokens", 0) for r in results)
-    dollars = tot_in / 1e6 * PRICE_PER_MTOK["input"] + tot_out / 1e6 * PRICE_PER_MTOK["output"]
+    tot_calls = sum(r["usage"].get("textract_calls", 0) for r in results)
+    dollars = (tot_in / 1e6 * PRICE_PER_MTOK["input"]
+               + tot_out / 1e6 * PRICE_PER_MTOK["output"]
+               + tot_calls * PRICE_PER_TEXTRACT_CALL)
     cost = {
         "input_tokens": tot_in,
         "output_tokens": tot_out,
+        "textract_calls": tot_calls,
         "total_dollars": round(dollars, 4),
         "dollars_per_referral": round(dollars / n, 4) if n else 0.0,
     }
