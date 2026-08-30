@@ -106,6 +106,23 @@ _STOP = {
 }
 
 
+def retrieve_pg(indication, codes, payor, k=2, alpha=0.5, pool=50):
+    """pgvector-backed twin of retrieve(): semantic scores + payor filter come from Postgres,
+    the keyword score + normalize + weighted merge stay here in Python."""
+    from app.vectorstore import semantic_candidates
+
+    cands = semantic_candidates(indication, payor, pool=pool)
+    if not cands:
+        return []
+    chunk_dicts = [{"text": c.text, "payor": c.payor, "cpt": c.cpt, "source": c.source}
+                   for c, _ in cands]
+    sem = np.array([s for _, s in cands])
+    kw = keyword_scores(codes, chunk_dicts)
+    combined = alpha * _norm(sem) + (1 - alpha) * _norm(kw)
+    order = np.argsort(combined)[::-1][:k]
+    return [(chunk_dicts[i], float(combined[i])) for i in order]
+
+
 def extract_keywords(shortlist, query, n=6):
     """STEP 2: harvest the payor-vocabulary terms that govern coverage,
     from the step-1 chunks, that were NOT already in the referral."""
@@ -150,12 +167,13 @@ def extract_keywords_llm(shortlist, query, n=6, model="claude-haiku-4-5-20251001
     return [t.strip() for t in raw.split(",") if t.strip()][:n]
 
 
-def retrieve_3step(indication, codes, payor, k=2, extractor=extract_keywords):
-    """The 3-step hybrid RAG: search -> learn vocabulary -> search again."""
-    shortlist = retrieve(indication, codes, payor, k=4)                # STEP 1
+def retrieve_3step(indication, codes, payor, k=2, extractor=extract_keywords, retriever=retrieve_pg):
+    """The 3-step hybrid RAG: search -> learn vocabulary -> search again.
+    Uses the pgvector-backed retriever by default; pass retriever=retrieve for the NumPy baseline."""
+    shortlist = retriever(indication, codes, payor, k=4)               # STEP 1
     keywords = extractor([c for c, _ in shortlist], indication)        # STEP 2
     expanded = indication + " " + " ".join(keywords)
-    results = retrieve(expanded, codes, payor, k=k)                    # STEP 3
+    results = retriever(expanded, codes, payor, k=k)                   # STEP 3
     return {"shortlist": shortlist, "keywords": keywords,
             "expanded_query": expanded, "results": results}
 
