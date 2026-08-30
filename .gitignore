@@ -1,0 +1,8 @@
+# Virtualenvs live at the repo root as well as inside referral-intake/.
+.venv/
+venv/
+
+__pycache__/
+*.pyc
+
+.env
