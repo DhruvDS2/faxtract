@@ -1,48 +1,60 @@
-import base64
-import io
-import json
-import os
-from pathlib import Path
+"""Extraction entry point.
 
-import anthropic
-from pdf2image import convert_from_path
+Two engines answer the same contract -- given a PDF, return a Referral and a
+usage dict. EXTRACTOR picks which one runs:
 
-from app.models import Referral
+    textract  Amazon Textract Queries (default). Per-field confidence and the
+              bounding box each value was read from.
+    claude    Claude vision. Per-field confidence is the model's own estimate
+              and there is no geometry, so the review UI cannot point at source.
+    fixture   Replays corpus ground truth with real boxes and fabricated
+              confidence. No cloud calls, no cost. For UI work and demos only;
+              the eval harness refuses it.
 
-MODEL = "claude-sonnet-4-6"
-
-FIELDS = [
-    "patient_first_name", "patient_last_name", "patient_dob", "patient_sex",
-    "patient_phone", "patient_address", "referring_provider_name",
-    "referring_provider_npi", "referring_practice", "requested_study",
-    "laterality", "cpt_code", "icd10_codes", "clinical_indication",
-    "urgency", "payor_name", "member_id", "group_id", "order_date",
-]
-
-PROMPT = f"""You are reading a faxed radiology referral. The scan is low quality: 1-bit,
-skewed, noisy, sometimes with a cover sheet as the first page.
-
-Extract these fields: {", ".join(FIELDS)}
-
-Rules:
-- Return null for any field you cannot read. Do not infer or guess a plausible value.
-- patient_dob and order_date as YYYY-MM-DD.
-- patient_sex as M, F, or U.
-- laterality as left, right, bilateral, or n/a.
-- urgency as routine, urgent, or stat.
-- icd10_codes as a list of strings.
-- cpt_code as the 5 digit code only.
-
-Also return a "confidence" object with a score from 0.0 to 1.0 for every field above.
-Score confidence on legibility only. A value you can read clearly is high confidence
-even if it looks unusual. A value you are reconstructing from partial characters is low.
-
-Return only JSON. No prose, no markdown fences.
+The rasterization helpers live here rather than in either engine because the
+Tesseract baseline and both engines all need them.
 """
+import base64
+import glob
+import io
+import os
+import shutil
+
+ENGINES = ("textract", "claude", "fixture")
+
+
+def poppler_dir():
+    """Locate Poppler's binaries, or None to let pdf2image search PATH.
+
+    pdf2image shells out to pdftoppm and pdfinfo. Homebrew and apt put those on
+    PATH; the Windows build is a portable archive that winget unpacks without
+    registering anything, so find it here rather than make everyone who clones
+    the repo edit their PATH. POPPLER_PATH overrides the search.
+    """
+    configured = os.getenv("POPPLER_PATH")
+    if configured:
+        return configured
+    if shutil.which("pdftoppm"):
+        return None
+    patterns = [
+        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\*Poppler*\poppler-*\Library\bin"),
+        r"C:\Program Files\poppler*\Library\bin",
+    ]
+    for pattern in patterns:
+        for candidate in sorted(glob.glob(pattern), reverse=True):
+            if os.path.exists(os.path.join(candidate, "pdftoppm.exe")):
+                return candidate
+    return None
 
 
 def pdf_to_images(pdf_path, dpi=200):
-    return convert_from_path(str(pdf_path), dpi=dpi)
+    from pdf2image import convert_from_path
+    return convert_from_path(str(pdf_path), dpi=dpi, poppler_path=poppler_dir())
+
+
+def pdf_page_count(pdf_path):
+    from pdf2image import pdfinfo_from_path
+    return pdfinfo_from_path(str(pdf_path), poppler_path=poppler_dir())["Pages"]
 
 
 def image_to_b64(img):
@@ -57,63 +69,18 @@ def ocr_baseline(pdf_path):
     return "\n".join(pytesseract.image_to_string(img) for img in pdf_to_images(pdf_path, dpi=300))
 
 
-_client = None
+def engine_name():
+    return os.getenv("EXTRACTOR", "textract").strip().lower()
 
 
-def _get_client():
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic()
-    return _client
-
-
-def _strip_fences(text):
-    text = text.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    return text.strip()
-
-
-def _to_referral(data) -> Referral:
-    conf = data.pop("confidence", {}) or {}
-    conf = {k: float(v) for k, v in conf.items() if isinstance(v, (int, float))}
-
-    clean = {k: v for k, v in data.items() if v not in ("", None)}
-
-    sex = clean.get("patient_sex")
-    if isinstance(sex, str):
-        s = sex.strip().upper()
-        clean["patient_sex"] = "M" if s.startswith("M") else "F" if s.startswith("F") else "U"
-    for field in ("laterality", "urgency"):
-        if isinstance(clean.get(field), str):
-            clean[field] = clean[field].strip().lower()
-
-    return Referral(**clean, confidence=conf)
-
-
-def extract(pdf_path) -> tuple[Referral, dict]:
-    pages = pdf_to_images(pdf_path)
-    content = [
-        {"type": "image",
-         "source": {"type": "base64", "media_type": "image/png", "data": image_to_b64(img)}}
-        for img in pages
-    ]
-    content.append({"type": "text", "text": PROMPT})
-
-    response = _get_client().messages.create(
-        model=MODEL,
-        max_tokens=2000,
-        messages=[{"role": "user", "content": content}],
-    )
-
-    raw = response.content[0].text
-    Path(pdf_path).with_suffix(".raw.json").write_text(raw)
-
-    data = json.loads(_strip_fences(raw))
-    referral = _to_referral(data)
-
-    usage = {"input_tokens": response.usage.input_tokens,
-             "output_tokens": response.usage.output_tokens}
-    return referral, usage
+def extract(pdf_path):
+    engine = engine_name()
+    if engine == "textract":
+        from app.extract_textract import extract as run
+    elif engine == "claude":
+        from app.extract_claude import extract as run
+    elif engine == "fixture":
+        from app.extract_fixture import extract as run
+    else:
+        raise ValueError(f"EXTRACTOR={engine!r} is not one of {ENGINES}")
+    return run(pdf_path)

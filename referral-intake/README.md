@@ -69,7 +69,7 @@ pip install -e .
 brew install tesseract poppler          # macOS
 apt install tesseract-ocr poppler-utils # Linux
 
-cp .env.example .env   # add your ANTHROPIC_API_KEY
+cp .env.example .env   # add your AWS keys, or set EXTRACTOR=fixture to run with no cloud account
 ```
 
 ## Run
