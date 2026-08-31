@@ -49,11 +49,30 @@ Every stage is built and verified end to end on a real run (macOS, Python 3.10, 
 - **MCP server** (`ris/mcp_server.py`) — five tools over the RIS, driven from a live MCP client.
 - **Review UI** (`web/`) — upload, worst-confidence-first queue, fax viewer, inline flags, corrections log.
 
-### Results (seed 42, 60 referrals)
+### Results (Claude vision, `claude-sonnet-4-6`, 60 referrals)
 
-- Every clinically critical field — CPT, member ID, ICD-10, payor, DOB, name, NPI — **100%** exact match.
-- Cost **~$0.0145 per referral**; extraction ~8.7s median per fax.
-- Auto-approval vs false-approval charted across thresholds 0.50–0.95 (`evals/threshold_sweep.png`).
+Full 60-fax extraction eval, every field compared to `ground_truth.json`:
+
+| Metric | Result |
+| --- | --- |
+| Overall field accuracy | **95.7%** (1091 / 1140 fields) |
+| Fields at 100% | **17 of 19** — including every critical field (CPT, member ID, ICD-10, payor, DOB, name, NPI, sex, phone, order date, group ID) |
+| Cost | **$0.0145 per referral** ($0.87 for all 60; 129k input + 32k output tokens) |
+| Latency | **p50 10.3s**, p95 12.8s per fax |
+
+The two fields below 100% are edge cases, not systemic errors:
+
+- `patient_address` **33%** — an artifact, not a miss. Only template-A faxes *print* an address (~20 of 60), but ground truth stores it for every patient, so the model is graded on data that isn't on the page. Excluding it, accuracy is ~98%.
+- `clinical_indication` 95%, `laterality` / `urgency` 97% — 1–3 files each.
+
+Reproduce it:
+
+```bash
+EXTRACTOR=claude python -m evals.run_extraction_eval      # writes evals/extraction_eval.json
+python -m http.server 8080                                 # then open evals/report.html
+```
+
+`evals/report.html` is a browsable report: summary cards, per-field accuracy, and all 60 files with predicted-vs-truth drill-down linked to each source fax. `evals/run_evals.py` additionally runs the full pipeline with the auto-approval threshold sweep.
 
 > Every fax's raw model response is saved next to it as `<name>.raw.json` for live debugging.
 
