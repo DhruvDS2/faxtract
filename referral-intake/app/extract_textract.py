@@ -71,6 +71,65 @@ def _png_bytes(img):
     return buf.getvalue()
 
 
+def _token(text):
+    return text.strip().strip(",.;:").lower()
+
+
+def _widen_to_words(bbox, text, blocks):
+    """Grow an answer box to cover the words it actually names.
+
+    Textract sometimes returns an answer whose Text is complete but whose
+    BoundingBox omits a leading or trailing word -- a house number, a suffix --
+    leaving the review highlight covering only part of the value it claims. The
+    WORD blocks in the same response carry the geometry the answer should have
+    had. Take the ones sitting on the answer's own line that spell its tokens,
+    and only absorb them while they stay contiguous with the box, so a word that
+    happens to repeat further along the line cannot drag it across the page.
+    """
+    if not bbox:
+        return bbox
+    wanted = {_token(t) for t in text.split() if _token(t)}
+    if not wanted:
+        return bbox
+
+    # A band one line-height above and below catches a wrapped answer without
+    # reaching into the rows either side of it.
+    height = bbox["Height"] or 0.01
+    band_top, band_bottom = bbox["Top"] - height, bbox["Top"] + bbox["Height"] + height
+    candidates = []
+    for block in blocks:
+        if block.get("BlockType") != "WORD" or _token(block.get("Text", "")) not in wanted:
+            continue
+        word = block.get("Geometry", {}).get("BoundingBox")
+        if word and band_top <= word["Top"] + word["Height"] / 2 <= band_bottom:
+            candidates.append(word)
+
+    # Roughly a space at this font size, so neighbouring words join but a
+    # column further across the page does not.
+    gap = max(height * 2, 0.008)
+    left, right = bbox["Left"], bbox["Left"] + bbox["Width"]
+    top, bottom = bbox["Top"], bbox["Top"] + bbox["Height"]
+
+    grew, widened = True, False
+    while grew:
+        grew = False
+        for word in candidates:
+            word_left, word_right = word["Left"], word["Left"] + word["Width"]
+            if word_left > right + gap or word_right < left - gap:
+                continue
+            word_top, word_bottom = word["Top"], word["Top"] + word["Height"]
+            if word_left < left or word_right > right or word_top < top or word_bottom > bottom:
+                left, right = min(left, word_left), max(right, word_right)
+                top, bottom = min(top, word_top), max(bottom, word_bottom)
+                grew = widened = True
+
+    # An answer Textract already boxed correctly keeps its own numbers rather
+    # than a rounded reconstruction of them.
+    if not widened:
+        return bbox
+    return {"Left": left, "Top": top, "Width": right - left, "Height": bottom - top}
+
+
 def answers_from_blocks(blocks):
     """Map each query alias to its best answer: (text, confidence, bounding box).
 
@@ -96,9 +155,11 @@ def answers_from_blocks(blocks):
             if best is None or answer.get("Confidence", 0) > best.get("Confidence", 0):
                 best = answer
         if best is not None:
-            out[alias] = (best["Text"].strip(),
+            answer = best["Text"].strip()
+            out[alias] = (answer,
                           best.get("Confidence", 0.0) / 100.0,
-                          best.get("Geometry", {}).get("BoundingBox"))
+                          _widen_to_words(best.get("Geometry", {}).get("BoundingBox"),
+                                          answer, blocks))
     return out
 
 

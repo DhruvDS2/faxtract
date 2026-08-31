@@ -56,13 +56,35 @@ def page_count(referral_id: str):
 PREVIEW_DPI = int(os.getenv("PREVIEW_DPI", "300"))
 
 
+# Rasterizing at 300 dpi costs about a second and renders every page even when
+# only one is asked for, so each page flip used to block on a full re-render.
+# Hovering a field whose source sits on another page turns that into a visible
+# stall, and a reviewer who moves on before it lands never sees the jump at all.
+# Encode once and keep the PNGs -- a page is ~100 KB, against a REFERRALS dict
+# that is already unbounded in memory.
+PAGE_CACHE: dict[tuple[str, int], list[bytes]] = {}
+
+
+def _page_pngs(referral_id):
+    key = (referral_id, PREVIEW_DPI)
+    if key not in PAGE_CACHE:
+        encoded = []
+        for image in pdf_to_images(REFERRALS[referral_id].source_file, dpi=PREVIEW_DPI):
+            buf = io.BytesIO()
+            image.convert("L").save(buf, format="PNG", optimize=True)
+            encoded.append(buf.getvalue())
+        PAGE_CACHE[key] = encoded
+    return PAGE_CACHE[key]
+
+
 @app.get("/referrals/{referral_id}/pages/{page}")
 def page_image(referral_id: str, page: int = 0):
-    images = pdf_to_images(REFERRALS[referral_id].source_file, dpi=PREVIEW_DPI)
-    idx = max(0, min(page, len(images) - 1))
-    buf = io.BytesIO()
-    images[idx].convert("L").save(buf, format="PNG", optimize=True)
-    return Response(content=buf.getvalue(), media_type="image/png")
+    pages = _page_pngs(referral_id)
+    idx = max(0, min(page, len(pages) - 1))
+    # The render of a given page never changes, so let the browser keep it too
+    # and make flipping back and forth free.
+    return Response(content=pages[idx], media_type="image/png",
+                    headers={"Cache-Control": "private, max-age=3600"})
 
 
 def _retrieve_for(processed):

@@ -99,7 +99,7 @@ export default function ReviewPane({
   }, [id]);
 
   const boxes: Box[] = useMemo(() => {
-    const field = reveal?.field ?? activeField;
+    const field = activeField ?? reveal?.field;
     if (!field || !data) return [];
     return data.referral.boxes?.[field] ?? [];
   }, [activeField, reveal, data]);
