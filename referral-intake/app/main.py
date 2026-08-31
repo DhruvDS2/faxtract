@@ -72,7 +72,9 @@ def _retrieve_for(processed):
     codes = [c for c in [r.cpt_code, *r.icd10_codes] if c]
     if not r.payor_name:
         return {"keywords": [], "results": []}
-    return rag.retrieve_3step(indication, codes, r.payor_name, k=3)
+    # surface more of the policy (docs have ~7 sections) so the panel shows the
+    # full picture, not just the top 3.
+    return rag.retrieve_3step(indication, codes, r.payor_name, k=6)
 
 
 def _auth_required(processed):
