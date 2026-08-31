@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Faxtract — Extraction Eval</title>
+<style>
+  :root { --ok:#137333; --bad:#c5221f; --line:#e3e3e3; --muted:#5f6368; --bg:#fafafa; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif; color:#202124; background:var(--bg); }
+  header { padding:20px 28px; background:#fff; border-bottom:1px solid var(--line); }
+  h1 { margin:0 0 4px; font-size:20px; }
+  .sub { color:var(--muted); font-size:13px; }
+  main { padding:24px 28px; max-width:1200px; margin:0 auto; }
+  .cards { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 18px; min-width:150px; }
+  .card .big { font-size:26px; font-weight:600; }
+  .card .lbl { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.4px; }
+  .note { background:#fff; border:1px solid var(--line); border-left:3px solid #1a73e8; border-radius:8px; padding:12px 16px; margin-bottom:20px; color:#3c4043; }
+  section h2 { font-size:15px; margin:26px 0 10px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top; }
+  th { background:#f1f3f4; font-weight:600; color:#3c4043; position:sticky; top:0; }
+  tr:last-child td { border-bottom:none; }
+  .barwrap { background:#eee; border-radius:5px; height:8px; width:120px; display:inline-block; overflow:hidden; vertical-align:middle; }
+  .bar { height:100%; background:var(--ok); }
+  .bar.warn { background:#f9ab00; } .bar.err { background:var(--bad); }
+  .filerow { cursor:pointer; }
+  .filerow:hover { background:#f8f9fa; }
+  .pct { font-variant-numeric:tabular-nums; }
+  .badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:11px; font-weight:600; }
+  .badge.ok { background:#e6f4ea; color:var(--ok); }
+  .badge.bad { background:#fce8e6; color:var(--bad); }
+  .detail td { background:#fbfbfb; }
+  .ftable { width:100%; border-collapse:collapse; }
+  .ftable th, .ftable td { border-bottom:1px solid #eee; padding:5px 8px; font-size:12.5px; }
+  .miss { color:var(--bad); font-weight:600; }
+  .mono { font-family:ui-monospace,Menlo,monospace; font-size:12px; white-space:pre-wrap; word-break:break-word; }
+  .tick { color:var(--ok); font-weight:700; } .cross { color:var(--bad); font-weight:700; }
+  a { color:#1a73e8; text-decoration:none; } a:hover { text-decoration:underline; }
+  .controls { margin:8px 0 16px; }
+  .controls label { margin-right:16px; color:var(--muted); }
+  #status { padding:40px; text-align:center; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Faxtract — Extraction Eval</h1>
+  <div class="sub">Every corpus fax run through <code>extract()</code>, each field compared to <code>ground_truth.json</code>.</div>
+</header>
+<main>
+  <div id="status">Loading <code>extraction_eval.json</code>… (run the eval first if this hangs)</div>
+  <div id="app" style="display:none">
+    <div class="cards" id="cards"></div>
+    <div class="note" id="howmeasured"></div>
+
+    <section>
+      <h2>Per-field accuracy (across all files)</h2>
+      <table id="fieldtable"><thead><tr><th>Field</th><th>Accuracy</th><th></th><th>Correct / Total</th></tr></thead><tbody></tbody></table>
+    </section>
+
+    <section>
+      <h2>All files <span class="sub" id="filecount"></span></h2>
+      <div class="controls">
+        <label><input type="checkbox" id="onlymiss"> show only files with a mismatch</label>
+        <span class="sub">click a row to expand field-by-field</span>
+      </div>
+      <table id="filetable">
+        <thead><tr><th>File</th><th>Template</th><th>Degradation</th><th>Accuracy</th><th></th><th>Latency</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+<script>
+const PDF_BASE = "../corpus/out/";
+function barClass(a){ return a>=0.999 ? "" : a>=0.9 ? "warn" : "err"; }
+function esc(s){ return (s??"").toString().replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function fmtVal(v){ if(v===null||v==="") return '<span class="miss">∅ (empty)</span>'; if(Array.isArray(v)) return esc(v.join(", ")); return esc(v); }
+
+fetch("extraction_eval.json").then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
+.then(data=>{
+  document.getElementById("status").style.display="none";
+  document.getElementById("app").style.display="block";
+  const s = data.summary, recs = data.records;
+
+  // cards
+  const c = document.getElementById("cards");
+  const card = (big,lbl)=>`<div class="card"><div class="big">${big}</div><div class="lbl">${lbl}</div></div>`;
+  c.innerHTML =
+    card((s.overall_accuracy*100).toFixed(1)+"%","overall field accuracy") +
+    card(s.fields_correct+" / "+s.fields_total,"fields correct") +
+    card(s.n_files,"files ("+s.engine+")") +
+    card("$"+s.cost.total_dollars,"total cost ($"+s.cost.dollars_per_referral+"/fax)") +
+    card(Math.round(s.latency_ms.p50)+"ms","p50 latency (p95 "+Math.round(s.latency_ms.p95)+"ms)");
+
+  document.getElementById("howmeasured").innerHTML =
+    "<b>How each field is scored:</b> " + esc(s.pricing_note);
+
+  // per-field table
+  const ftbody = document.querySelector("#fieldtable tbody");
+  const fields = Object.entries(s.per_field).sort((a,b)=>a[1].accuracy-b[1].accuracy);
+  ftbody.innerHTML = fields.map(([f,v])=>`
+    <tr>
+      <td class="mono">${f}</td>
+      <td class="pct">${(v.accuracy*100).toFixed(0)}%</td>
+      <td><span class="barwrap"><span class="bar ${barClass(v.accuracy)}" style="width:${v.accuracy*100}%"></span></span></td>
+      <td>${v.correct} / ${v.total}</td>
+    </tr>`).join("");
+
+  // file rows
+  const tbody = document.querySelector("#filetable tbody");
+  document.getElementById("filecount").textContent = "("+recs.length+" total)";
+  function render(){
+    const onlyMiss = document.getElementById("onlymiss").checked;
+    tbody.innerHTML = "";
+    let shown = 0;
+    recs.forEach((r,idx)=>{
+      const perfect = r.correct===r.total && !r.error;
+      if(onlyMiss && perfect) return;
+      shown++;
+      const badge = perfect ? '<span class="badge ok">all match</span>'
+                            : '<span class="badge bad">'+(r.total-r.correct)+' off'+(r.error?' · ERROR':'')+'</span>';
+      const tr = document.createElement("tr");
+      tr.className = "filerow";
+      tr.innerHTML = `
+        <td><a href="${PDF_BASE}${r.file}" target="_blank" onclick="event.stopPropagation()">${r.file}</a></td>
+        <td>${esc(r.template)}</td><td>${esc(r.degradation)}</td>
+        <td class="pct">${(r.accuracy*100).toFixed(0)}% ${badge}</td>
+        <td><span class="barwrap"><span class="bar ${barClass(r.accuracy)}" style="width:${r.accuracy*100}%"></span></span></td>
+        <td class="pct">${Math.round(r.latency_ms)}ms</td>`;
+      const det = document.createElement("tr");
+      det.className = "detail"; det.style.display="none";
+      det.innerHTML = `<td colspan="6"><table class="ftable">
+        <thead><tr><th>Field</th><th>Predicted (extracted)</th><th>Ground truth</th><th>Match</th><th>Conf.</th></tr></thead>
+        <tbody>${r.fields.map(f=>`<tr>
+          <td class="mono">${f.field}</td>
+          <td>${fmtVal(f.predicted)}</td>
+          <td>${fmtVal(f.truth)}</td>
+          <td>${f.match?'<span class="tick">✓</span>':'<span class="cross">✗</span>'}</td>
+          <td>${f.confidence==null?'—':(+f.confidence).toFixed(2)}</td>
+        </tr>`).join("")}</tbody></table>
+        ${r.error?'<div class="miss" style="padding:8px">'+esc(r.error)+'</div>':''}</td>`;
+      tr.onclick = ()=>{ det.style.display = det.style.display==="none"?"table-row":"none"; };
+      tbody.appendChild(tr); tbody.appendChild(det);
+    });
+    document.getElementById("filecount").textContent = "("+shown+" shown of "+recs.length+")";
+  }
+  document.getElementById("onlymiss").onchange = render;
+  render();
+})
+.catch(e=>{ document.getElementById("status").innerHTML =
+  "Could not load <code>extraction_eval.json</code> ("+e.message+").<br>Run the eval first:<br><code>EXTRACTOR=claude .venv/bin/python -m evals.run_extraction_eval</code>"; });
+</script>
+</body>
+</html>
