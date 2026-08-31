@@ -71,6 +71,39 @@ def _png_bytes(img):
     return buf.getvalue()
 
 
+def word_pages(pdf_path):
+    """Textract WORD boxes per page, in the shape app.locate expects
+    ({text, norm, left, top, width, height}, normalized 0-1). Lets Claude's
+    values be located against Textract's OCR geometry instead of Tesseract's."""
+    client = _get_client()
+    pages = []
+    for img in pdf_to_images(pdf_path):
+        # AnalyzeDocument (not DetectDocumentText -- the IAM user is only granted
+        # AnalyzeDocument) still returns raw WORD blocks with geometry. The single
+        # query is just to satisfy the required FeatureTypes; we ignore its answer.
+        resp = client.analyze_document(
+            Document={"Bytes": _png_bytes(img)},
+            FeatureTypes=["QUERIES"],
+            QueriesConfig={"Queries": [{"Text": "patient name", "Alias": "_probe"}]},
+        )
+        words = []
+        for b in resp.get("Blocks", []):
+            if b.get("BlockType") != "WORD":
+                continue
+            bb = b.get("Geometry", {}).get("BoundingBox", {})
+            t = b.get("Text", "").strip()
+            if not t or not bb:
+                continue
+            words.append({
+                "text": t.lower(),
+                "norm": re.sub(r"[^a-z0-9]", "", t.lower()),
+                "left": bb["Left"], "top": bb["Top"],
+                "width": bb["Width"], "height": bb["Height"],
+            })
+        pages.append(words)
+    return pages
+
+
 def answers_from_blocks(blocks):
     """Map each query alias to its best answer: (text, confidence, bounding box).
 
