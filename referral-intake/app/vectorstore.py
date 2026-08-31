@@ -30,9 +30,9 @@ def semantic_candidates(query_text, payor, pool=50):
     from app.rag import embed  # lazy import to avoid a circular import
 
     qvec = embed([query_text])[0]
-    session = SessionLocal()
-    query = session.query(Chunk, (1 - Chunk.embedding.cosine_distance(qvec)).label("sem"))
-    if payor:
-        query = query.filter(Chunk.payor.ilike(f"%{payor}%"))
-    rows = query.order_by(Chunk.embedding.cosine_distance(qvec)).limit(pool).all()
-    return [(chunk, float(sem)) for chunk, sem in rows]
+    with SessionLocal() as session:  # context manager returns the connection to the pool
+        query = session.query(Chunk, (1 - Chunk.embedding.cosine_distance(qvec)).label("sem"))
+        if payor:
+            query = query.filter(Chunk.payor.ilike(f"%{payor}%"))
+        rows = query.order_by(Chunk.embedding.cosine_distance(qvec)).limit(pool).all()
+        return [(chunk, float(sem)) for chunk, sem in rows]
