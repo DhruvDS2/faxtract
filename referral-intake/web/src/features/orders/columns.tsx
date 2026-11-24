@@ -97,7 +97,7 @@ export const columns = [
   col.accessor((r) => STATUS_RANK[orderState(r).kind], {
     id: "status",
     header: "Status",
-    meta: { className: "w-72 py-0.5", headClassName: "w-72", skeleton: "w-32" },
+    meta: { className: "w-76 py-0.5", headClassName: "w-76", skeleton: "w-32" },
     cell: (c) => <StatusCell row={c.row.original} sending={!!metaOf(c.table).sending[c.row.original.referral_id]} />,
   }),
   col.accessor("attempts", {
