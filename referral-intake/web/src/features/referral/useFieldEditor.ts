@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ApiError } from "@/api/client";
 import { usePatch } from "@/api/queries";
 import type { ReferralRecord } from "@/contracts";
-import { toast } from "@/components/ui/sonner";
+import { notify } from "./notify";
 import { STATUS } from "@/lib/status";
 import { FIELD_ORDER, fieldMeta, fromDraft, toDraft } from "./fields";
 import { plural } from "./format";
@@ -51,7 +51,7 @@ export function useFieldEditor(record: ReferralRecord) {
     if (patch.isPending) return;
     if (!changed.length) {
       setEditing(false);
-      toast("No changes to save");
+      notify.info("No changes to save");
       return;
     }
     const fields = Object.fromEntries(changed.map((f) => [f, fromDraft(f, draft[f])]));
@@ -61,7 +61,7 @@ export function useFieldEditor(record: ReferralRecord) {
         onSuccess: (rec) => {
           setEditing(false);
           setErrors({});
-          toast.success(`Saved ${plural(changed.length, "correction")}`, {
+          notify.success(`Saved ${plural(changed.length, "correction")}`, {
             description:
               rec.status === "needs_review"
                 ? `Validation re-ran${rec.pipeline === "graph" ? " and the graph paused again for approval" : ""}.`
@@ -78,13 +78,13 @@ export function useFieldEditor(record: ReferralRecord) {
             }
             setErrors(byField);
             setErrorRound((n) => n + 1);
-            toast.error("Some fields need fixing", {
+            notify.error("Some fields need fixing", {
               description: other.length ? other.join("; ") : `${plural(Object.keys(byField).length || 1, "field")} could not be saved.`,
             });
           } else if (err instanceof ApiError && err.status === 409) {
-            toast.error("Can't save these edits", { description: err.message });
+            notify.error("Can't save these edits", { description: err.message });
           } else {
-            toast.error("Save failed", { description: err instanceof Error ? err.message : String(err) });
+            notify.error("Save failed", { description: err instanceof Error ? err.message : String(err) });
           }
         },
       },

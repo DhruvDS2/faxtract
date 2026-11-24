@@ -59,7 +59,7 @@ export function FieldsPanel({ record, editor, selected, hovered, onSelect, onHov
 
   const meta = editor.editing ? (
     <span>
-      Editing{editor.changed.length > 0 && ` · ${plural(editor.changed.length, "change")}`} · only changed fields are sent
+      Editing · only changed fields are sent, then validation re-runs
     </span>
   ) : (
     <span className="tabular-nums">
@@ -162,7 +162,7 @@ function FieldRow({ field, record, editor, flags, confidence, hasBox, selected, 
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       aria-pressed={clickable ? selected : undefined}
-      aria-label={clickable ? `${meta.label}: show on the fax` : undefined}
+      title={clickable ? "Show on the fax" : undefined}
       onKeyDown={
         clickable
           ? (e) => {
@@ -226,9 +226,12 @@ function ValueView({ field, value }: { field: string; value: unknown }) {
   const testid = `field-${field}`;
   if (kind === "codes" && Array.isArray(value) && value.length) {
     return (
-      <span data-testid={testid} className="flex flex-wrap gap-x-2">
+      <span data-testid={testid}>
         {value.map((c, i) => (
-          <Code key={i}>{String(c)}</Code>
+          <span key={i}>
+            {i > 0 && <span className="text-fg-faint">, </span>}
+            <Code>{String(c)}</Code>
+          </span>
         ))}
       </span>
     );

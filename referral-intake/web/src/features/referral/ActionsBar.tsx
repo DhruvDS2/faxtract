@@ -18,7 +18,7 @@ type Props = {
 
 function Hint({ k, children }: { k: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center gap-1 whitespace-nowrap">
       {k}
       <span>{children}</span>
     </span>
@@ -44,8 +44,6 @@ export function ActionsBar({ record, editor, actions, onReject, onFixField }: Pr
     if (wasEditing.current && !editor.editing) editButton.current?.focus();
     wasEditing.current = editor.editing;
   }, [editor.editing]);
-
-  const errorFlags = record.flags.filter((f) => f.severity === "error");
 
   return (
     <div className="shrink-0 border-t border-border bg-bg">
@@ -74,9 +72,9 @@ export function ActionsBar({ record, editor, actions, onReject, onFixField }: Pr
       <div className="flex min-h-12 items-center gap-3 px-4 py-2">
         {editor.editing ? (
           <>
-            <div className="flex min-w-0 items-center gap-3 text-xs text-fg-muted">
-              <span className="truncate">
-                {editor.changed.length ? `${plural(editor.changed.length, "change")} · ` : ""}Saving re-runs validation; approve afterwards.
+            <div className="flex min-w-0 items-center gap-3 overflow-hidden text-xs text-fg-muted">
+              <span className="truncate font-medium text-fg">
+                {editor.changed.length ? plural(editor.changed.length, "unsaved change") : "No changes yet"}
               </span>
               <Hint k={<><Kbd>{MOD_KEY}</Kbd><Kbd>↵</Kbd></>}>save</Hint>
               <Hint k={<Kbd>esc</Kbd>}>cancel</Hint>
@@ -93,12 +91,11 @@ export function ActionsBar({ record, editor, actions, onReject, onFixField }: Pr
           </>
         ) : actions.canApprove ? (
           <>
-            <div className="flex min-w-0 items-center gap-3 text-xs text-fg-muted">
+            <div className="flex min-w-0 items-center gap-3 overflow-hidden text-xs text-fg-muted">
               <Hint k={<Kbd>a</Kbd>}>approve</Hint>
               <Hint k={<Kbd>e</Kbd>}>edit</Hint>
               <Hint k={<Kbd>r</Kbd>}>reject</Hint>
               <Hint k={<Kbd>esc</Kbd>}>back</Hint>
-              {errorFlags.length > 0 && <span className="text-bad">{plural(errorFlags.length, "error")} block approval</span>}
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
               <Button variant="danger" data-testid="btn-reject" onClick={onReject} disabled={actions.busy}>
@@ -116,10 +113,8 @@ export function ActionsBar({ record, editor, actions, onReject, onFixField }: Pr
           </>
         ) : actions.canRetry ? (
           <>
-            <div className="flex min-w-0 items-center gap-3 text-xs text-fg-muted">
-              <span className="truncate text-bad">
-                {record.order.last_error ?? "The RIS did not accept the order."}
-              </span>
+            <div className="flex min-w-0 items-center gap-3 overflow-hidden text-xs text-fg-muted">
+              <span className="truncate">Order not delivered · attempt {record.order.attempts}</span>
               <Hint k={<Kbd>r</Kbd>}>reject</Hint>
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">

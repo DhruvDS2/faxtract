@@ -9,10 +9,11 @@ import { EmptyState, ErrorState } from "@/components/States";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/components/ui/sonner";
+import { notify } from "./notify";
 import { Tip } from "@/components/ui/tooltip";
 import { fmtDateTime } from "@/lib/format";
 import { STATUS } from "@/lib/status";
+import { queueHref } from "@/features/queue/queueMemory";
 import { useHotkeys } from "@/features/queue/useHotkeys";
 import { ActionsBar } from "./ActionsBar";
 import { ComparePanel } from "./ComparePanel";
@@ -106,7 +107,7 @@ function ReferralView({ record }: { record: ReferralRecord }) {
     next.delete("edit");
     setParams(next, { replace: true });
     if (REVIEWABLE.includes(record.status)) editor.start();
-    else toast(`Editing is only possible while a referral needs review. This one is ${STATUS[record.status].label.toLowerCase()}.`);
+    else notify.info(`Editing is only possible while a referral needs review. This one is ${STATUS[record.status].label.toLowerCase()}.`);
     // Runs when the flag or the status changes.
   }, [params, record.status]);
 
@@ -140,7 +141,7 @@ function ReferralView({ record }: { record: ReferralRecord }) {
       Escape: () => {
         if (editor.editing) editor.cancel();
         else if (selected) setSelected(null);
-        else navigate("/queue");
+        else navigate(queueHref());
       },
       "mod+Enter": () => {
         if (editor.editing) editor.save();
@@ -173,7 +174,7 @@ function ReferralView({ record }: { record: ReferralRecord }) {
               <div className="flex min-w-0 items-center gap-2">
                 <Tip content="Back to the queue (esc)">
                   <Button variant="ghost" size="icon" className="-ml-1.5 size-7 shrink-0" asChild>
-                    <Link to="/queue" aria-label="Back to the queue">
+                    <Link to={queueHref()} aria-label="Back to the queue">
                       <ArrowLeft />
                     </Link>
                   </Button>

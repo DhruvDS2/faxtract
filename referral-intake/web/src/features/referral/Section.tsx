@@ -14,7 +14,7 @@ type Props = {
 export const Section = forwardRef<HTMLElement, Props>(({ id, title, meta, actions, children, className, ...rest }, ref) => (
   <section ref={ref} id={id} aria-labelledby={`${id}-title`} className={cn("border-b border-border px-4 py-3", className)} {...rest}>
     <div className="mb-2 flex min-h-7 items-center gap-2">
-      <h2 id={`${id}-title`} className="text-base font-semibold">
+      <h2 id={`${id}-title`} className="shrink-0 text-base font-semibold">
         {title}
       </h2>
       {meta && <div className="min-w-0 truncate text-xs text-fg-muted">{meta}</div>}

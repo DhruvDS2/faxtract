@@ -150,6 +150,7 @@ export default function FaxViewer({ url, boxes, activeField, selectedField, onSe
         <Document
           key={attempt}
           file={url}
+          suspense={false}
           onLoadSuccess={(doc) => {
             setNumPages(doc.numPages);
             setCurrent(1);
@@ -181,6 +182,7 @@ export default function FaxViewer({ url, boxes, activeField, selectedField, onSe
                 <Page
                   pageNumber={i + 1}
                   width={pageWidth}
+                  suspense={false}
                   renderTextLayer={false}
                   renderAnnotationLayer={false}
                   onRenderSuccess={() => setRendered((n) => n + 1)}

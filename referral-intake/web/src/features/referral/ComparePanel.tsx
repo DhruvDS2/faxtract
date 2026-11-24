@@ -139,19 +139,19 @@ function RetrieverColumn({ run, expected, className }: { run: RetrieverRun; expe
             const isExpected = !!expected && c.source === expected;
             return (
               <li key={`${c.rank}-${c.source}`} className="py-2">
-                <div className="flex min-w-0 items-center gap-1.5 text-xs">
-                  <span className="w-5 shrink-0 text-fg-faint tabular-nums">#{c.rank}</span>
-                  <Code className="min-w-0 truncate" title={c.source}>
-                    {c.source}
-                  </Code>
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-fg-faint tabular-nums">#{c.rank}</span>
                   {isExpected && (
-                    <span className="inline-flex shrink-0 items-center gap-0.5 text-ok">
+                    <span className="inline-flex items-center gap-0.5 text-ok">
                       <Check className="size-3" aria-hidden />
                       expected
                     </span>
                   )}
-                  <span className="ml-auto shrink-0 text-fg-muted tabular-nums">{c.score.toFixed(3)}</span>
+                  <span className="ml-auto text-fg-muted tabular-nums">score {c.score.toFixed(3)}</span>
                 </div>
+                <Code className="block truncate" title={c.source}>
+                  {c.source}
+                </Code>
                 <Excerpt text={c.text} lines={2} />
               </li>
             );

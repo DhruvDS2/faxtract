@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/api/client";
 import { keys, useApprove, useReject, useRetrySend } from "@/api/queries";
 import { REJECTABLE, RETRYABLE, REVIEWABLE, type Flag, type ReferralRecord } from "@/contracts";
-import { toast } from "@/components/ui/sonner";
+import { notify } from "./notify";
 import { STATUS } from "@/lib/status";
 import { plural } from "./format";
 
@@ -37,20 +37,20 @@ export function useReviewActions(record: ReferralRecord) {
       {
         onSuccess: (rec) => {
           if (rec.status === "sent_to_ris")
-            toast.success("Approved and sent to RIS", { description: `RIS acknowledged the order (${rec.order.ack_code ?? "no ACK code"}).` });
+            notify.success("Approved and sent to RIS", { description: `RIS acknowledged the order (${rec.order.ack_code ?? "no ACK code"}).` });
           else if (rec.status === "ris_error")
-            toast.error("Approved, but the RIS did not take the order", { description: rec.order.last_error ?? undefined });
-          else toast.success(`Approved · ${STATUS[rec.status].label}`);
+            notify.error("Approved, but the RIS did not take the order", { description: rec.order.last_error ?? undefined });
+          else notify.success(`Approved · ${STATUS[rec.status].label}`);
         },
         onError: (err) => {
           if (err instanceof ApiError && err.status === 409) {
             const flags = err.body?.flags ?? [];
             setBlocking(flags);
-            toast.error("Approve blocked", {
+            notify.error("Approve blocked", {
               description: flags.length ? `${plural(flags.length, "validation error")} must be fixed first.` : err.message,
             });
             refetch();
-          } else toast.error("Approve failed", { description: message(err) });
+          } else notify.error("Approve failed", { description: message(err) });
         },
       },
     );
@@ -61,12 +61,12 @@ export function useReviewActions(record: ReferralRecord) {
     try {
       const rec = await rejectM.mutateAsync({ reason });
       setBlocking([]);
-      toast.success("Referral rejected", { description: rec.reviews.at(-1)?.note ?? reason });
+      notify.success("Referral rejected", { description: rec.reviews.at(-1)?.note ?? reason });
       return null;
     } catch (err) {
       if (err instanceof ApiError && err.status === 422) return err.body?.errors[0]?.message ?? err.message;
       if (err instanceof ApiError && err.status === 409) {
-        toast.error("Can't reject", { description: err.message });
+        notify.error("Can't reject", { description: err.message });
         refetch();
         return err.message;
       }
@@ -79,11 +79,11 @@ export function useReviewActions(record: ReferralRecord) {
     retryM.mutate(undefined, {
       onSuccess: (rec) => {
         if (rec.status === "sent_to_ris")
-          toast.success("Order sent", { description: `RIS acknowledged it (${rec.order.ack_code ?? "no ACK code"}) on attempt ${rec.order.attempts}.` });
-        else toast.error("Retry failed", { description: rec.order.last_error ?? STATUS[rec.status].label });
+          notify.success("Order sent", { description: `RIS acknowledged it (${rec.order.ack_code ?? "no ACK code"}) on attempt ${rec.order.attempts}.` });
+        else notify.error("Retry failed", { description: rec.order.last_error ?? STATUS[rec.status].label });
       },
       onError: (err) => {
-        toast.error("Retry failed", { description: message(err) });
+        notify.error("Retry failed", { description: message(err) });
         if (err instanceof ApiError && err.status === 409) refetch();
       },
     });
