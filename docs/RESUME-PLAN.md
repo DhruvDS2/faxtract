@@ -1,5 +1,7 @@
 # Resume plan: faxtract-v2-serve-and-ui (paused 2026-11-23)
 
+> **Resumed and completed 2026-11-24.** The wrap-up below is done: `docs/gates/V2-UI-REPORT.md` is written and v2-ui is pushed. This file is kept as the record of the pause.
+
 **Status at pause:**
 - The run is paused at the very end of Phase 3.
 - Every lane is done and merged into `v2-ui`.
