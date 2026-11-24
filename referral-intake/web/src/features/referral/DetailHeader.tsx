@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
+import { useHealth } from "@/api/queries";
 import { Morph } from "@/components/Morph";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusLine } from "@/components/StatusLine";
@@ -104,6 +105,18 @@ type Props = {
 export function DetailHeader({ id, name, status, flow, graphLink, actions }: Props) {
   const back = useBackToQueue();
   const line = flow ?? status;
+  // RIS down (GET /health): say so before the coordinator approves or retries, not after
+  const risDown = useHealth().data?.ris === "down";
+  const sends = !!actions && !actions.editing && (actions.canApprove || actions.canRetry);
+  const risNote =
+    risDown && sends ? (
+      <span data-testid="detail-ris-down">
+        <span className="font-medium text-bad">The RIS isn&rsquo;t answering.</span>{" "}
+        {actions?.canApprove
+          ? "If you approve now, the order waits as a RIS error until you retry the send."
+          : "A retry will fail until the RIS is back."}
+      </span>
+    ) : undefined;
 
   return (
     <PageHeader
@@ -158,6 +171,7 @@ export function DetailHeader({ id, name, status, flow, graphLink, actions }: Pro
           </div>
         )
       }
+      meta={risNote}
       actions={actions && <HeaderActions {...actions} />}
     />
   );

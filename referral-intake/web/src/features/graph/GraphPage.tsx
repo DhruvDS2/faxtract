@@ -201,7 +201,7 @@ function standing(r: ReferralRecord, run: GraphRun | null, structure: GraphStruc
   const failedAt = run ? [...run.states].find(([, s]) => s === "error")?.[0] : undefined;
   switch (r.status) {
     case "processing":
-      return "processing";
+      return "still running";
     case "needs_review":
       return paused ? `paused at ${stepLabel(paused).toLowerCase()}` : "waiting for review";
     case "ris_error":
