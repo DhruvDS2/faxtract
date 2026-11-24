@@ -24,6 +24,7 @@ import { TechToggle, useTechDetails } from "./TechToggle";
 import { TraceTimeline } from "./TraceTimeline";
 import { deriveRun, executions, isSettling, revealSequence, type GraphRun } from "./trace";
 import { V1Stages } from "./V1Stages";
+import { parseReason } from "@/features/referral/reasons";
 
 /**
  * Pipeline: the served graph as a left-to-right flow map, coloured by what it did
@@ -218,6 +219,15 @@ function standing(r: ReferralRecord, run: GraphRun | null, structure: GraphStruc
   }
 }
 
+/** The pipeline's review reasons in the detail page's words ("Prior auth: prior imaging is missing…"). */
+const plainReasons = (raw: string[]) =>
+  raw
+    .map((x, i) => {
+      const p = parseReason(x, i);
+      return p.lead ? `${p.lead}: ${p.text}` : p.text;
+    })
+    .join(" · ");
+
 function StatusFor({ r, run }: { r: ReferralRecord; run: GraphRun | null }) {
   const runningStep = [...(run?.executions ?? [])].reverse().find((e) => e.status === "running")?.node;
   switch (r.status) {
@@ -231,7 +241,7 @@ function StatusFor({ r, run }: { r: ReferralRecord; run: GraphRun | null }) {
       );
     case "needs_review":
       return (
-        <StatusLine tone="warn" detail={r.review_reasons.length ? r.review_reasons.join(" · ") : undefined}>
+        <StatusLine tone="warn" detail={r.review_reasons.length ? plainReasons(r.review_reasons) : undefined}>
           Waiting for a coordinator
         </StatusLine>
       );
