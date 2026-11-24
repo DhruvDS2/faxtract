@@ -1,93 +1,121 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { createColumnHelper } from "@tanstack/react-table";
-import { ArrowUpRight } from "lucide-react";
-import type { FalseApprovalCase } from "@/contracts";
+import type { BenchmarkReport, FalseApprovalCase } from "@/contracts";
 import { useReferrals } from "@/api/queries";
-import { Badge } from "@/components/ui/badge";
 import { Code } from "@/components/Code";
-import { Confidence } from "@/components/Confidence";
-import { EmptyState } from "@/components/States";
-import { DataTable } from "@/features/graph/DataTable";
+import { KeyValue } from "@/components/PageHeader";
+import { fmtConfidence, humanize } from "@/lib/format";
+import { PIPELINE_LABEL, fieldLabel, listJoin, showValue, splitExplanation } from "./copy";
+import { Section } from "./parts";
 
-type Row = FalseApprovalCase & { referralId: string | null };
-const col = createColumnHelper<Row>();
-
-const show = (v: unknown) => (v === null || v === undefined ? "null" : typeof v === "string" ? v : JSON.stringify(v));
-
-const columns = [
-  col.accessor("file", {
-    header: "File",
-    meta: { className: "w-px whitespace-nowrap align-top py-2" },
-    cell: (c) => (
-      <div className="space-y-0.5">
-        <Code>{c.getValue()}</Code>
-        {c.row.original.referralId && (
-          <Link
-            to={`/referrals/${c.row.original.referralId}`}
-            className="flex items-center gap-0.5 text-xs text-accent hover:underline"
-          >
-            Open referral <ArrowUpRight className="size-3" />
-          </Link>
-        )}
-      </div>
-    ),
-  }),
-  col.accessor("field", {
-    header: "Field",
-    meta: { className: "w-px whitespace-nowrap align-top py-2" },
-    cell: (c) => <Code>{c.getValue()}</Code>,
-  }),
-  col.accessor("predicted", {
-    header: "Predicted",
-    meta: { className: "w-px align-top py-2" },
-    cell: (c) => <Code className="rounded-md bg-surface-2 px-1">{show(c.getValue())}</Code>,
-  }),
-  col.accessor("truth", {
-    header: "Truth",
-    meta: { className: "w-px align-top py-2" },
-    cell: (c) => <Code className="rounded-md bg-surface-2 px-1">{show(c.getValue())}</Code>,
-  }),
-  col.accessor("confidence", {
-    header: "Confidence",
-    meta: { className: "w-px whitespace-nowrap align-top py-2" },
-    cell: (c) => <Confidence value={c.getValue()} />,
-  }),
-  col.accessor("pipelines", {
-    header: "Pipelines",
-    meta: { className: "w-px whitespace-nowrap align-top py-2" },
-    cell: (c) => (
-      <span className="flex gap-1">
-        {c.getValue().map((p) => (
-          <Badge key={p} tone="outline" className="font-mono">
-            {p}
-          </Badge>
-        ))}
-      </span>
-    ),
-  }),
-  col.accessor("explanation", {
-    header: "Why it slipped through",
-    meta: { className: "min-w-80 align-top py-2 text-fg-muted" },
-  }),
-];
-
-/** Each auto-approval that had a critical field wrong, with the benchmark's explanation. */
-export function FalseApprovals({ cases }: { cases: FalseApprovalCase[] }) {
-  const referrals = useReferrals();
-  const rows = useMemo<Row[]>(() => {
-    const byFile = new Map((referrals.data ?? []).map((r) => [r.source_name, r.id]));
-    return cases.map((c) => ({ ...c, referralId: byFile.get(c.file) ?? null }));
-  }, [cases, referrals.data]);
-  if (!cases.length) return <EmptyState title="No false approvals in this run" hint="Nothing was auto-approved with a critical field wrong." />;
+/** CPT codes inside the benchmark's prose are set in mono, like every other code. */
+function Prose({ text }: { text: string }) {
+  const parts = text.split(/\b(CPT \d{5})\b/);
   return (
-    <DataTable
-      data={rows}
-      columns={columns}
-      getRowId={(r, i) => `${r.file}-${r.field}-${i}`}
-      rowProps={(row) => ({ "data-file": row.original.file })}
-      stickyHeader={false}
-      className="rounded-md border border-border"
-    />
+    <>
+      {parts.map((p, i) =>
+        i % 2 ? (
+          <span key={i}>
+            CPT <Code>{p.slice(4)}</Code>
+          </span>
+        ) : (
+          p
+        ),
+      )}
+    </>
+  );
+}
+
+function confidenceText(c: number | null, threshold: number) {
+  if (c == null) return "no confidence recorded";
+  const side = c >= threshold ? (c === threshold ? "at" : "above") : "below";
+  return `at confidence ${fmtConfidence(c)}, ${side} the ${threshold} threshold`;
+}
+
+function Case({
+  c,
+  threshold,
+  truthVersion,
+  referralId,
+}: {
+  c: FalseApprovalCase;
+  threshold: number;
+  truthVersion: string | null;
+  referralId: string | null;
+}) {
+  const { context, body } = splitExplanation(c.file, c.explanation);
+  return (
+    <article className="py-6 first:pt-0 last:pb-0" data-file={c.file} aria-label={`${c.file}, ${fieldLabel(c.field)}`}>
+      <div className="max-w-3xl">
+        <KeyValue label="Fax">
+          <span className="flex flex-wrap items-baseline gap-x-2">
+            <Code>{c.file}</Code>
+            {context && <span className="text-fg-muted">{context}</span>}
+            {referralId && (
+              <Link
+                to={`/referrals/${referralId}`}
+                className="text-fg-muted underline decoration-border-strong underline-offset-4 transition-colors duration-fast ease-enter hover:text-fg hover:decoration-fg-muted"
+              >
+                Open referral
+              </Link>
+            )}
+          </span>
+        </KeyValue>
+        <KeyValue label="Field">{fieldLabel(c.field)}</KeyValue>
+        <KeyValue label="Model read">
+          <Code className="text-fg">{showValue(c.predicted)}</Code>{" "}
+          <span className="text-fg-muted tabular-nums">{confidenceText(c.confidence, threshold)}</span>
+        </KeyValue>
+        <KeyValue label="Ground truth">
+          <Code className="text-fg">{showValue(c.truth)}</Code>
+          {truthVersion && <span className="text-fg-muted"> · {humanize(truthVersion)}</span>}
+        </KeyValue>
+        <KeyValue label="Auto-approved by">{listJoin(c.pipelines.map((p) => PIPELINE_LABEL[p] ?? p))}</KeyValue>
+      </div>
+      <p className="mt-4 max-w-2xl text-body text-fg">
+        <Prose text={body} />
+      </p>
+    </article>
+  );
+}
+
+/** Each auto-approval that had a critical field wrong, explained in the benchmark's own words. */
+export function FalseApprovals({ report }: { report: BenchmarkReport }) {
+  const cases = report.false_approval_cases;
+  const referrals = useReferrals();
+  const byFile = useMemo(() => new Map((referrals.data ?? []).map((r) => [r.source_name, r.id])), [referrals.data]);
+  const truthVersion = typeof report.corpus.truth_version === "string" ? report.corpus.truth_version : null;
+  const { v1, v2 } = report;
+  const n = cases.length;
+
+  return (
+    <Section
+      testId="evals-false-approvals"
+      title={n === 0 ? "No false approvals" : n === 1 ? "The false approval, explained" : `The ${n} false approvals, explained`}
+      meta={
+        <span className="tabular-nums">
+          Auto-approved with a critical field wrong: v1 {v1.false_approvals} of {v1.auto_approved} auto-approved, v2{" "}
+          {v2.false_approvals} of {v2.auto_approved}
+        </span>
+      }
+    >
+      {n === 0 ? (
+        <p className="text-body text-fg-muted">
+          Neither pipeline auto-approved a referral with a critical field wrong in this run.
+        </p>
+      ) : (
+        <div className="divide-y divide-border">
+          {cases.map((c, i) => (
+            <Case
+              key={`${c.file}-${c.field}-${i}`}
+              c={c}
+              threshold={report.threshold}
+              truthVersion={truthVersion}
+              referralId={byFile.get(c.file) ?? null}
+            />
+          ))}
+        </div>
+      )}
+    </Section>
   );
 }
