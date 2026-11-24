@@ -86,6 +86,13 @@ class PolicyCitation(BaseModel):
     text: str
 
 
+class PolicyResult(BaseModel):
+    """GET /referrals/{id}/policy."""
+    required: bool
+    keywords: list[str] = Field(default_factory=list)
+    citations: list[PolicyCitation] = Field(default_factory=list)
+
+
 class OrderInfo(BaseModel):
     order_id: str | None = None
     message: str | None = None        # the HL7 ORM^O01 actually sent (\r-separated)

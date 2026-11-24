@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -74,7 +74,7 @@ class ProcessedReferral(BaseModel):
     auth: AuthRequirement | None = None
     auth_packet_path: str | None = None
     status: Literal["needs_review", "auto_approved", "approved", "rejected", "sent_to_ris"] = "needs_review"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     stage_timings_ms: dict[str, float] = Field(default_factory=dict)
     token_usage: dict[str, int] = Field(default_factory=dict)
 
@@ -85,4 +85,4 @@ class Correction(BaseModel):
     original_value: str | None
     corrected_value: str | None
     original_confidence: float | None
-    corrected_at: datetime = Field(default_factory=datetime.utcnow)
+    corrected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
