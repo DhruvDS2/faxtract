@@ -105,7 +105,7 @@ export function GraphCanvas({
   );
 
   const onNodeClick: NodeMouseHandler<PipelineFlowNode> = (_, n) => {
-    if (n.data.node.kind === "node") onSelect(n.id === selected ? null : n.id);
+    if (!dimmed && n.data.node.kind === "node") onSelect(n.id === selected ? null : n.id);
   };
 
   return (

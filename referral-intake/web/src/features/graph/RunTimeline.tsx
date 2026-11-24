@@ -21,10 +21,13 @@ export function RunTimeline({
   events,
   selected,
   onSelect,
+  nodeHeader = "Node",
 }: {
   events: TraceEvent[];
   selected: string | null;
-  onSelect: (node: string) => void;
+  /** Omit to make rows inert (e.g. v1 stages, which have no graph node to open). */
+  onSelect?: (node: string) => void;
+  nodeHeader?: string;
 }) {
   const rows = useMemo<Row[]>(() => {
     const sorted = [...events].sort((a, b) => a.seq - b.seq);
@@ -55,7 +58,7 @@ export function RunTimeline({
             }),
           ]
         : []),
-      col.accessor("node", { header: "Node", meta: { className: TIGHT }, cell: (c) => <Code>{c.getValue()}</Code> }),
+      col.accessor("node", { header: nodeHeader, meta: { className: TIGHT }, cell: (c) => <Code>{c.getValue()}</Code> }),
       col.accessor("status", {
         header: "Status",
         meta: { className: TIGHT },
@@ -83,7 +86,7 @@ export function RunTimeline({
         cell: (c) => <span title={c.getValue() ?? undefined}>{c.getValue() ?? ""}</span>,
       }),
     ],
-    [multiRun],
+    [multiRun, nodeHeader],
   );
 
   return (
@@ -93,9 +96,9 @@ export function RunTimeline({
       testId="graph-timeline"
       getRowId={(r) => String(r.seq)}
       rowProps={(row) => ({
-        onClick: () => onSelect(row.original.node),
-        className: "cursor-pointer",
-        "data-state": row.original.node === selected ? "selected" : undefined,
+        onClick: onSelect ? () => onSelect(row.original.node) : undefined,
+        className: onSelect ? "cursor-pointer" : undefined,
+        "data-state": onSelect && row.original.node === selected ? "selected" : undefined,
       })}
     />
   );

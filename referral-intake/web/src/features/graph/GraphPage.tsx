@@ -146,7 +146,12 @@ export function GraphPage() {
                       <EmptyState title="No trace events yet" hint="Events appear here as each node starts and finishes." />
                     )
                   ) : (
-                    <RunTimeline events={trace.data} selected={selected} onSelect={(n) => selectNode(n)} />
+                    <RunTimeline
+                      events={trace.data}
+                      selected={selected}
+                      onSelect={isV1 ? undefined : (n) => selectNode(n)}
+                      nodeHeader={isV1 ? "Stage" : "Node"}
+                    />
                   )}
                 </div>
               </section>
