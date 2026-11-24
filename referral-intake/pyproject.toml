@@ -1,27 +1,63 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "referral-intake"
-version = "0.1.0"
-requires-python = ">=3.10"
+version = "0.2.0"
+description = "Synthetic radiology fax-referral intake: extraction, validation, eligibility, prior auth, HL7 ORM to a mock RIS."
+# The tested floors below need 3.12+ (numpy 2.5 is the tightest).
+requires-python = ">=3.12"
+# Floors are the versions the suite was run against (the shared dev venv).
 dependencies = [
-    "anthropic",
-    "boto3",
-    "fastapi",
-    "uvicorn[standard]",
-    "pydantic>=2",
-    "python-dotenv",
-    "python-multipart",
-    "pdf2image",
-    "pytesseract",
-    "pillow",
-    "numpy",
-    "reportlab",
-    "matplotlib",
-    "mcp",
-    "pytest",
+    # API
+    "fastapi>=0.165.0",
+    "uvicorn[standard]>=0.54.0",
+    "pydantic>=2.14.4",
+    "python-dotenv>=1.2.4",
+    "python-multipart>=0.0.34",
+    # fax rendering, OCR, PDFs, plots
+    "pdf2image>=1.17.0",
+    "pytesseract>=0.3.13",
+    "pillow>=13.0.0",
+    "numpy>=2.5.5",
+    "reportlab>=5.1.0",
+    "matplotlib>=3.11.2",
+    # live extraction engine (EXTRACTOR=claude; needs ANTHROPIC_API_KEY)
+    "anthropic>=2.13.0",
+    # Postgres: psycopg 3 (DATABASE_URL is postgresql+psycopg://...), pgvector
+    "sqlalchemy>=2.1.9",
+    "psycopg[binary,pool]>=3.3.9",
+    "pgvector>=0.5.1",
+    # RAG embeddings (all-MiniLM-L6-v2) and the served v2 graph
+    "sentence-transformers>=6.3.0",
+    "langgraph>=1.2.24",
+    "langgraph-checkpoint-postgres>=3.2.1",
+    # MCP server over the RIS: `from mcp.server import MCPServer` exists on 2.x only
+    "mcp==2.3.0",
+    # HTTP client for scripts/seed_demo.py
+    "httpx>=0.28.1",
 ]
 
-[tool.setuptools]
-packages = ["app", "ris", "evals"]
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.2.0",
+    "httpx>=0.28.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+# corpus/ has no __init__.py, so namespace discovery is on; the explicit list
+# keeps web/, tests/, docs/ and corpus/out etc. out of the package set.
+include = [
+    "app", "app.*",
+    "ris", "ris.*",
+    "evals", "evals.*",
+    "graph", "graph.*",
+    "scripts", "scripts.*",
+    "corpus",
+]
+namespaces = true
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
