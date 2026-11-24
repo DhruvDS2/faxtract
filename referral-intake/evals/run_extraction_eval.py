@@ -10,14 +10,17 @@ accuracy, cost, and latency.
 
 Run:  EXTRACTOR=claude .venv/bin/python -m evals.run_extraction_eval
 """
+import argparse
 import json
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 from app.extract import engine_name, extract
 from app.models import Referral
+from evals.safety import log_cost, quarantine, require_live_engine, write_json_atomic
 from evals.scoring import SCORED_FIELDS, field_matches
 
 load_dotenv()
@@ -39,10 +42,14 @@ def _val(v):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default=str(OUT), help="artifact path (replaced only if every file succeeds)")
+    args = ap.parse_args()
+    out_path = Path(args.out)
+
     engine = engine_name()
-    if engine == "fixture":
-        raise SystemExit("EXTRACTOR=fixture replays ground truth -> fake 100%. "
-                         "Use EXTRACTOR=claude or EXTRACTOR=textract.")
+    require_live_engine(engine)
+    run_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     ground_truth = json.loads((CORPUS / "ground_truth.json").read_text())
     files = sorted(f for f in ground_truth if (CORPUS / f).exists())
@@ -120,8 +127,13 @@ def main():
         return round(lats[lo] + (lats[hi] - lats[lo]) * (k - lo), 1)
 
     dollars = tot_in / 1e6 * PRICE_PER_MTOK["input"] + tot_out / 1e6 * PRICE_PER_MTOK["output"]
+    model = None
+    if engine == "claude":
+        from app.extract_claude import MODEL as model
     summary = {
         "engine": engine,
+        "model": model,
+        "run_at": run_at,
         "n_files": len(records),
         "overall_accuracy": tot_correct / tot_total if tot_total else 0.0,
         "fields_correct": tot_correct,
@@ -139,7 +151,16 @@ def main():
                         "for dates; order-insensitive set compare for icd10_codes.",
     }
 
-    OUT.write_text(json.dumps({"summary": summary, "records": records}, indent=2))
+    payload = {"summary": summary, "records": records}
+    usage = {"input_tokens": tot_in, "output_tokens": tot_out}
+    failed = [r["file"] for r in records if r["error"]]
+    if failed or not records:
+        saved = quarantine(payload, out_path.stem)
+        log_cost("run_extraction_eval", engine, len(records), dollars, usage, ok=False)
+        raise SystemExit(f"{len(failed)} of {len(records)} files failed; {out_path} left untouched. "
+                         f"This run was saved to {saved}")
+    write_json_atomic(out_path, payload)
+    log_cost("run_extraction_eval", engine, len(records), dollars, usage, ok=True)
     print("\n=== summary ===")
     print(f"engine={engine}  files={summary['n_files']}  "
           f"overall accuracy {summary['overall_accuracy']:.1%} "
@@ -150,7 +171,7 @@ def main():
     print("worst fields:")
     for f, s in sorted(per_field.items(), key=lambda kv: kv[1]["accuracy"])[:6]:
         print(f"  {f:26s} {s['accuracy']:.0%} ({s['correct']}/{s['total']})")
-    print(f"\nwrote {OUT}")
+    print(f"\nwrote {out_path}")
 
 
 if __name__ == "__main__":

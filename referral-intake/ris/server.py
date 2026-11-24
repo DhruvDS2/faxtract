@@ -1,4 +1,5 @@
 import json
+import os
 import socketserver
 import threading
 from datetime import datetime
@@ -8,18 +9,23 @@ SB = b"\x0b"
 EB = b"\x1c"
 CR = b"\x0d"
 
-STORE_PATH = Path(__file__).parent / "orders.json"
 _lock = threading.Lock()
 
 
+def _store_path() -> Path:
+    # same rule as ris/store.py: RIS_STORE_PATH, else ris/orders.json
+    return Path(os.getenv("RIS_STORE_PATH") or Path(__file__).parent / "orders.json")
+
+
 def load_orders():
-    if STORE_PATH.exists():
-        return json.loads(STORE_PATH.read_text())
+    path = _store_path()
+    if path.exists():
+        return json.loads(path.read_text())
     return {}
 
 
 def save_orders(orders):
-    STORE_PATH.write_text(json.dumps(orders, indent=2))
+    _store_path().write_text(json.dumps(orders, indent=2))
 
 
 def parse_message(raw):

@@ -1,20 +1,26 @@
 import json
+import os
 import threading
 from pathlib import Path
 
-STORE_PATH = Path(__file__).parent / "orders.json"
 _lock = threading.Lock()
 
 
+def store_path() -> Path:
+    """RIS_STORE_PATH overrides where orders live (tests, demo); default ris/orders.json."""
+    return Path(os.getenv("RIS_STORE_PATH") or Path(__file__).parent / "orders.json")
+
+
 def load():
-    if STORE_PATH.exists():
-        return json.loads(STORE_PATH.read_text())
+    path = store_path()
+    if path.exists():
+        return json.loads(path.read_text())
     return {}
 
 
 def save(orders):
     with _lock:
-        STORE_PATH.write_text(json.dumps(orders, indent=2))
+        store_path().write_text(json.dumps(orders, indent=2))
 
 
 def find_by_patient(last_name, dob=None):

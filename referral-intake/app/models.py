@@ -9,12 +9,9 @@ Severity = Literal["error", "warning"]
 
 
 class Box(BaseModel):
-    """A region of a page, normalized to 0-1 against that page's dimensions.
-
-    Textract returns geometry this way, which means the same numbers overlay
-    correctly on any rendering of the page regardless of DPI or zoom. The
-    review UI turns them straight into CSS percentages.
-    """
+    """Where a value sits on a page, as fractions (0-1) of that page's width and
+    height measured from its top-left corner -- so it overlays any rendering of
+    the page at any zoom."""
     page: int = 0
     left: float
     top: float
@@ -43,7 +40,7 @@ class Referral(BaseModel):
     group_id: str | None = None
     order_date: date | None = None
     confidence: dict[str, float] = Field(default_factory=dict)
-    boxes: dict[str, list[Box]] = Field(default_factory=dict)
+    boxes: dict[str, list[Box]] = Field(default_factory=dict)  # field -> where it was read
 
 
 class Flag(BaseModel):

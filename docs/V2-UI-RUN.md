@@ -50,3 +50,16 @@ Rewrite the README claims to match committed artifacts only (name 59/60 with the
 ══ PHASE 3: QA + GATE ══
 Merge order into v2-ui: B, A, C, then D and E, then docs. Gates: full pytest green; npm run build with 0 TypeScript errors; fresh-clone one-command demo works; Playwright end-to-end: upload fax → appears in queue → edit a field → approve → ORM sent → ACK shown → trace shows every node. Save screenshots of every screen and state to docs/gates/screens/, plus a 30-60s demo video of that flow. Every README number traces to a committed artifact (list them).
 Push v2-ui to origin. Write docs/gates/V2-UI-REPORT.md, including main's hash before/after (must match). Print the exact commands for me to preview it locally (checkout v2-ui, start the demo, URL to open). Print a "CONTEXT FOR CLAUDE" block of at most 60 lines. STOP.
+
+══ AMENDMENT (received during Phase 0; applied; logged in docs/gates/V2-UI-REPORT.md) ══
+1. Replace decision 1: do NOT cherry-pick 00ab26d. Use no code from AaditAggarwal/* branches. Remove the Textract extraction engine and its AWS config/vars and check_aws (keep the claude + fixture engines). Field highlighting uses our own locate.py / extraction bounding boxes. Lane B re-implements the deps, index bootstrap and page cache itself. The existing web/ review UI is replaced by the new UI. If any served path still depends on Aadit-authored code, replace it, and list everything removed in the report.
+2. No LangSmith, no LangChain-hosted services, no LangChain API keys. LangGraph runs locally. Tracing is our own (trace events in Postgres).
+3. Replace UI screen 3 with "Pipeline graph":
+   - API: GET /graph/structure returns nodes + edges from the compiled LangGraph (build_graph().get_graph()), never hardcoded.
+   - Render with React Flow (@xyflow/react) in the DESIGN.md style.
+   - For a selected referral: color nodes by status (done green, running pulsing teal, paused amber at human_review, skipped gray, error red); highlight the path taken; live updates while running (polling or SSE).
+   - Clicking a node shows its input/output state diff, duration, cost, retries.
+   - A paused referral shows "Fix & resume", which ties into the referral detail edit + approve.
+   - Header badge shows the active PIPELINE (graph/v1).
+4. Add to referral detail: a "Compare v1 vs v2" button that runs v1 keyword retrieval and v2 RAG for this referral and shows the retrieved chunks side by side with scores.
+5. README "Demo in 90 seconds": upload fax → nodes light up → pauses at human review → fix field → approve → resumes → ORM sent → ACK → Evals page v1 vs v2. The Playwright demo video follows this exact script.

@@ -1,0 +1,170 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@xyflow/react/dist/style.css";
+@import "react-pdf/dist/Page/TextLayer.css";
+@import "react-pdf/dist/Page/AnnotationLayer.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens: web/DESIGN.md is the source of truth for these values. */
+:root {
+  --bg: #ffffff;
+  --surface: #fafafa;
+  --surface-2: #f4f4f5;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --fg: #18181b;
+  --fg-muted: #52525b;
+  --fg-faint: #a1a1aa;
+
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --accent-fg: #ffffff;
+  --accent-subtle: #f0fdfa;
+  --accent-border: #99f6e4;
+
+  --ok-fg: #15803d;
+  --ok-bg: #f0fdf4;
+  --ok-border: #bbf7d0;
+  --warn-fg: #b45309;
+  --warn-bg: #fffbeb;
+  --warn-border: #fde68a;
+  --bad-fg: #b91c1c;
+  --bad-bg: #fef2f2;
+  --bad-border: #fecaca;
+  --idle-fg: #52525b;
+  --idle-bg: #f4f4f5;
+  --idle-border: #e4e4e7;
+
+  --shadow-float: 0 4px 16px rgb(0 0 0 / 0.08);
+}
+
+.dark {
+  --bg: #0c0c0e;
+  --surface: #121215;
+  --surface-2: #1a1a1e;
+  --border: #27272a;
+  --border-strong: #3f3f46;
+  --fg: #f4f4f5;
+  --fg-muted: #a1a1aa;
+  --fg-faint: #71717a;
+
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-fg: #04201d;
+  --accent-subtle: #0b2724;
+  --accent-border: #115e59;
+
+  --ok-fg: #4ade80;
+  --ok-bg: #0b2416;
+  --ok-border: #14532d;
+  --warn-fg: #fbbf24;
+  --warn-bg: #2a1d05;
+  --warn-border: #78350f;
+  --bad-fg: #f87171;
+  --bad-bg: #2a0c0c;
+  --bad-border: #7f1d1d;
+  --idle-fg: #a1a1aa;
+  --idle-bg: #1a1a1e;
+  --idle-border: #27272a;
+
+  --shadow-float: 0 4px 16px rgb(0 0 0 / 0.5);
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-border: var(--accent-border);
+
+  --color-ok: var(--ok-fg);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-border: var(--ok-border);
+  --color-warn: var(--warn-fg);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-border: var(--warn-border);
+  --color-bad: var(--bad-fg);
+  --color-bad-bg: var(--bad-bg);
+  --color-bad-border: var(--bad-border);
+  --color-idle: var(--idle-fg);
+  --color-idle-bg: var(--idle-bg);
+  --color-idle-border: var(--idle-border);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+  --shadow-float: var(--shadow-float);
+
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+
+  --animate-pulse-ring: pulse-ring 1.2s ease-out infinite;
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+    100% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent); }
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 20px;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  :focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    outline-offset: 1px;
+  }
+  ::selection {
+    background: var(--accent-subtle);
+  }
+}
+
+/* React Flow: keep it inside the design system (no default blue, no shadows). */
+.react-flow {
+  --xy-background-color: var(--bg);
+  --xy-edge-stroke: var(--border-strong);
+  --xy-edge-stroke-selected: var(--accent);
+  --xy-node-border-radius: 6px;
+  --xy-node-boxshadow-hover: none;
+  --xy-node-boxshadow-selected: none;
+  --xy-controls-button-background-color: var(--surface);
+  --xy-controls-button-border-color: var(--border);
+  font-family: var(--font-sans);
+}

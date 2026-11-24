@@ -1,10 +1,11 @@
 import re
 import unicodedata
 
+from app.contracts import EDITABLE_FIELDS
 from app.models import Referral
 from app.validate import is_auto_approvable, validate
 
-SCORED_FIELDS = [f for f in Referral.model_fields if f not in ("confidence", "boxes")]
+SCORED_FIELDS = list(EDITABLE_FIELDS)  # every extracted field; confidence/boxes are metadata
 CRITICAL_FIELDS = ["patient_first_name", "patient_last_name", "patient_dob",
                    "cpt_code", "laterality", "icd10_codes", "member_id", "payor_name"]
 
