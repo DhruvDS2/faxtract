@@ -6,6 +6,16 @@
  * extraction, real validation, mock-payor 270/271, auth rules, HL7 and v1/v2
  * retrieval -- but the statuses, traces and benchmark numbers are synthetic.
  * The UI shows a "MOCK DATA" chip whenever this is active.
+ *
+ * Fault modes, to review every loading / empty / error state without a backend:
+ *   ?mock=empty               no referrals, orders or eval artifacts (404); uploads still work
+ *   ?mock=error               every API call answers 500
+ *   ?mock=ris-down            /health reports the RIS down; approve and retry-send end in ris_error
+ *   ?mock=slow                every request takes ~2.5 s (loading states)
+ *   ?mock=extraction-pending  one referral stays `processing` with a live trace
+ *   ?mock=normal              back to the default
+ * The URL param is kept for the tab (sessionStorage), so in-app navigation keeps the
+ * mode; localStorage "mock" sets a default for every tab.
  */
 import type {
   Correction,
@@ -35,6 +45,27 @@ const db = {
   corrections: [] as Correction[],
 };
 const LATENCY = 180;
+const SLOW = 2500;
+
+export const MOCK_MODES = ["normal", "empty", "error", "ris-down", "slow", "extraction-pending"] as const;
+export type MockMode = (typeof MOCK_MODES)[number];
+const isMode = (v: string | null): v is MockMode => !!v && (MOCK_MODES as readonly string[]).includes(v);
+
+/** The active fault mode: ?mock= (kept for the tab), else sessionStorage, else localStorage. */
+export function mockMode(): MockMode {
+  try {
+    const q = new URLSearchParams(window.location.search).get("mock");
+    if (q !== null) {
+      const m = isMode(q) ? q : "normal";
+      sessionStorage.setItem("mock", m);
+      return m;
+    }
+    const s = sessionStorage.getItem("mock") ?? localStorage.getItem("mock");
+    return isMode(s) ? s : "normal";
+  } catch {
+    return "normal";
+  }
+}
 const now = () => new Date().toISOString();
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -100,6 +131,75 @@ function send(r: ReferralRecord, run: string) {
   trace(r.id, "order", "ok", { run_id: run, branch: "AA", attempt: r.order.attempts, delta: { status: "sent_to_ris" } });
 }
 
+/** RIS down: the ORM goes out and nothing answers. */
+function sendFails(r: ReferralRecord, run: string) {
+  trace(r.id, "order", "running", { run_id: run });
+  const error = "connection refused (127.0.0.1:2575)";
+  touch(r, {
+    status: "ris_error",
+    order: {
+      ...r.order,
+      order_id: r.order.order_id ?? `ORD${r.id.toUpperCase()}`,
+      message: r.order.message ?? `MSH|^~\\&|REFERRAL_INTAKE|HOLLISPARK|RIS|HOLLISPARK|20261123150000||ORM^O01|MSG${r.id.toUpperCase()}|P|2.5.1`,
+      ack_code: null,
+      ack_raw: null,
+      attempts: r.order.attempts + 1,
+      last_error: error,
+      sent_at: now(),
+    },
+  });
+  trace(r.id, "order", "error", { run_id: run, branch: "ris_error", attempt: r.order.attempts, error, delta: { status: "ris_error" } });
+}
+
+// ---------- extraction-pending: one referral that never settles, with a trace that keeps moving ----------
+
+const PENDING_ID = "upending"; // the "u" prefix serves public/mock/upload.pdf as its fax
+let pendingSince = 0;
+/** [node, starts at s, ends at s (Infinity = still running), branch] */
+const PENDING_STEPS: [string, number, number, string | null][] = [
+  ["extract", 0, 20, null],
+  ["validate", 20, 21, null],
+  ["eligibility", 21, 23, null],
+  ["auth", 23, 25, "retrieve"],
+  ["retrieve", 25, Infinity, null],
+];
+
+function pendingRecord(): ReferralRecord {
+  if (!pendingSince) pendingSince = Date.now();
+  const elapsed = (Date.now() - pendingSince) / 1000;
+  const template = data.records.find((x) => x.source_name === "referral_054.pdf")!;
+  const extracted = elapsed >= PENDING_STEPS[0][2];
+  const empty = Object.fromEntries(Object.keys(template.referral).map((k) => [k, null])) as unknown as ReferralRecord["referral"];
+  const rec: ReferralRecord = {
+    ...structuredClone(template),
+    id: PENDING_ID, source_name: "referral_061.pdf", source_file: `uploads/${PENDING_ID}/referral_061.pdf`, status: "processing",
+    referral: extracted
+      ? { ...structuredClone(template.referral), patient_first_name: "Renee", patient_last_name: "Lindqvist" }
+      : { ...empty, icd10_codes: [], confidence: {}, boxes: {} },
+    flags: [], eligibility: null, auth: null, review_reasons: [], reviews: [], citations: [], keywords: [], packet_available: false,
+    order: { order_id: null, message: null, ack_code: null, ack_raw: null, attempts: 0, last_error: null, sent_at: null },
+    error: null,
+    created_at: new Date(pendingSince).toISOString(), updated_at: now(),
+  };
+  const run = `${PENDING_ID}-run-1`;
+  const at = (s: number) => new Date(pendingSince + s * 1000).toISOString();
+  const events: TraceEvent[] = [];
+  const push = (node: string, status: TraceEvent["status"], start: number, extra: Partial<TraceEvent> = {}) =>
+    events.push({
+      referral_id: PENDING_ID, run_id: run, seq: events.length + 1, pipeline: "graph", node, status, started_at: at(start),
+      duration_ms: 0, cost_usd: 0, tokens_in: 0, tokens_out: 0, attempt: 1, branch: null, detail: {}, error: null,
+      state_in: status === "running" ? null : {}, delta: status === "running" ? null : {}, ...extra,
+    });
+  for (const [node, start, end, branch] of PENDING_STEPS) {
+    if (elapsed < start) break;
+    push(node, "running", start);
+    if (elapsed >= end) push(node, "ok", start, { duration_ms: (end - start) * 1000, branch });
+  }
+  db.traces.set(PENDING_ID, events);
+  db.records.set(PENDING_ID, rec);
+  return rec;
+}
+
 /** A new upload walks the graph a node per ~700 ms, then pauses at human review. */
 async function runUpload(r: ReferralRecord) {
   const run = `${r.id}-run-1`;
@@ -125,17 +225,25 @@ async function runUpload(r: ReferralRecord) {
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function mockFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  await sleep(LATENCY);
+  const mode = mockMode();
+  await sleep(mode === "slow" ? SLOW : LATENCY);
   const method = (init.method ?? "GET").toUpperCase();
   const url = new URL(path, "http://mock");
   const parts = url.pathname.split("/").filter(Boolean);
   const body = typeof init.body === "string" ? JSON.parse(init.body) : undefined;
 
+  if (mode === "error") return fail(500, "mock fault mode: database is unavailable");
+  // the pending referral exists only in its mode
+  if (mode === "extraction-pending") pendingRecord();
+  else if (db.records.has(PENDING_ID)) db.records.delete(PENDING_ID);
+  // empty: only what was uploaded in this session
+  const visible = () => [...db.records.values()].filter((r) => mode !== "empty" || r.id.startsWith("u"));
+
   if (parts[0] === "health")
-    return ok({ ok: true, db: true, ris: "up", pipeline: "graph", extractor: "replay (mock)", threshold: 0.85 });
+    return ok({ ok: mode !== "ris-down", db: true, ris: mode === "ris-down" ? "down" : "up", pipeline: "graph", extractor: "replay (mock)", threshold: 0.85 });
   if (parts[0] === "graph" && parts[1] === "structure") return ok(data.structure);
   if (parts[0] === "orders") {
-    const rows: RisOrderRow[] = [...db.records.values()]
+    const rows: RisOrderRow[] = visible()
       .filter((r) => r.order.attempts > 0)
       .map((r) => ({
         referral_id: r.id, order_id: r.order.order_id, cpt_code: r.referral.cpt_code,
@@ -146,6 +254,8 @@ export async function mockFetch(path: string, init: RequestInit = {}): Promise<R
     return ok(rows);
   }
   if (parts[0] === "evals") {
+    if (mode === "empty")
+      return fail(404, parts[1] === "benchmark" ? "no benchmark artifact yet: run python -m evals.benchmark" : "no extraction eval artifact yet: run python -m evals.extraction");
     const which = parts[1] === "benchmark" ? data.benchmark : data.extraction;
     const source = parts[1] === "benchmark" ? "MOCK (evals/benchmark_v1_v2.json not generated yet)" : "MOCK (subset of evals/extraction_eval.json)";
     return ok({ source, run_at: "2026-11-23T15:00:00Z", run_at_source: "artifact", data: which });
@@ -157,7 +267,7 @@ export async function mockFetch(path: string, init: RequestInit = {}): Promise<R
   if (parts.length === 1 && method === "GET") {
     const status = url.searchParams.get("status") as ReferralStatus | null;
     const payor = url.searchParams.get("payor");
-    const rows = [...db.records.values()]
+    const rows = visible()
       .filter((r) => !status || r.status === status)
       .filter((r) => !payor || r.referral.payor_name === payor)
       .map(summary);
@@ -181,7 +291,7 @@ export async function mockFetch(path: string, init: RequestInit = {}): Promise<R
   }
 
   const id = parts[1];
-  const r = db.records.get(id);
+  const r = visible().find((x) => x.id === id);
   if (!r) return fail(404, `referral ${id} not found`);
   const sub = parts[2];
 
@@ -228,7 +338,8 @@ export async function mockFetch(path: string, init: RequestInit = {}): Promise<R
     trace(id, "human_review", "running", { run_id: run });
     trace(id, "human_review", "ok", { run_id: run, branch: "approve" });
     touch(r, { status: "approved", reviews: [...r.reviews, { action: "approve", reviewer: body?.reviewer ?? null, note: body?.note ?? null, fields: [], at: now() }] });
-    send(r, run);
+    if (mode === "ris-down") sendFails(r, run);
+    else send(r, run);
     return ok(r);
   }
   if (sub === "reject" && method === "POST") {
@@ -240,7 +351,8 @@ export async function mockFetch(path: string, init: RequestInit = {}): Promise<R
   }
   if (sub === "retry-send" && method === "POST") {
     if (r.status !== "ris_error") return fail(409, `nothing to retry: referral is ${r.status}`, { status: r.status });
-    send(r, `${id}-retry-${r.order.attempts + 1}`);
+    if (mode === "ris-down") sendFails(r, `${id}-retry-${r.order.attempts + 1}`);
+    else send(r, `${id}-retry-${r.order.attempts + 1}`);
     return ok(r);
   }
   return fail(404, `mock: no route for ${method} ${path}`);
