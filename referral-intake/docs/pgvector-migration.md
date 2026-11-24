@@ -1,3 +1,5 @@
+> **Historical document.** This was the plan written *before* the pgvector code existed. The code differs: the table is `policy_chunks` (`app/vectorstore.py`), `cpt` is `Text`, and the schema is created by `app.db.init_db()` (run by `scripts/bootstrap.py`). Read the code, not this plan.
+
 # Adding a real vector database to faxtract (pgvector)
 
 Reference for migrating the RAG retriever from the in-memory NumPy array to **pgvector**,

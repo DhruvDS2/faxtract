@@ -1,11 +1,17 @@
-# Virtualenvs live at the repo root as well as inside referral-intake/.
+# Python (also covers referral-intake/, patterns have no leading slash)
 .venv/
 venv/
-
 __pycache__/
 *.pyc
+*.egg-info/
+build/
+.pytest_cache/
 
+# secrets
 .env
+
+# OS / editors
+.DS_Store
 
 # lane worktrees for orchestrated runs
 .worktrees/

@@ -3,7 +3,7 @@
 Claude vision returns field values + confidence but no coordinates. This runs a
 Tesseract OCR pass to get word-level boxes, then matches each extracted value
 back to the words on the page -- giving the same hover-highlight source regions
-Textract produces natively. Boxes are normalized 0-1 to match the Box schema.
+the review UI highlights. Boxes are normalized 0-1 to match the Box schema.
 """
 
 import re
@@ -99,9 +99,7 @@ def locate_boxes(pdf_path, referral, pages=None):
     """Populate referral.boxes by matching each field value to page word boxes.
 
     `pages` is a list (one per page) of word dicts {text, norm, left, top, width,
-    height}, all normalized 0-1. If not given, Tesseract provides them. Passing
-    Textract word boxes instead gives the same matching against Claude's values
-    but with higher-quality OCR geometry."""
+    height}, all normalized 0-1. If not given, a local Tesseract pass provides them."""
     if pages is None:
         pages = [_page_words(img) for img in pdf_to_images(pdf_path)]
 
