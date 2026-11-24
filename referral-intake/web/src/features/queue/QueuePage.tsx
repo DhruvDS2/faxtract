@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   flexRender,
@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { STATUS, STATUS_ORDER } from "@/lib/status";
 import { cn } from "@/lib/utils";
 import { COLUMN_CLASS, DEFAULT_SORT, NO_PAYOR, columns, type QueueTableMeta } from "./columns";
+import { queueMemory } from "./queueMemory";
 import { UploadButton } from "./UploadButton";
 import { useHotkeys } from "./useHotkeys";
 import { useNow } from "./useNow";
@@ -31,8 +32,53 @@ const isStatus = (v: string | null): v is ReferralStatus => !!v && v in STATUS;
 const sameSort = (a: SortingState, b: SortingState) =>
   a.length === b.length && a.every((s, i) => s.id === b[i].id && s.desc === b[i].desc);
 
-// Survives navigating to a referral and back, so j/k picks up where you left off.
-let lastSelected: string | null = null;
+/**
+ * The shared Select as a queue filter. After a value is picked, focus moves to the
+ * results (so j/k work straight away); closing without a change returns it to the trigger.
+ */
+function FilterSelect({
+  value,
+  onChange,
+  testid,
+  label,
+  width,
+  resultsRef,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  testid: string;
+  label: string;
+  width: string;
+  resultsRef: React.RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
+}) {
+  const changed = useRef(false);
+  return (
+    <Select
+      value={value}
+      onValueChange={(v) => {
+        changed.current = true;
+        onChange(v);
+      }}
+    >
+      <SelectTrigger className={width} data-testid={testid} aria-label={label}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent
+        className="min-w-[var(--radix-select-trigger-width)]"
+        onCloseAutoFocus={(e) => {
+          if (!changed.current) return;
+          changed.current = false;
+          e.preventDefault();
+          resultsRef.current?.focus({ preventScroll: true });
+        }}
+      >
+        {children}
+      </SelectContent>
+    </Select>
+  );
+}
 
 export function QueuePage() {
   const navigate = useNavigate();
@@ -44,8 +90,12 @@ export function QueuePage() {
   const data = query.data;
   const now = useNow();
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORT);
-  const [selectedId, setSelectedId] = useState<string | null>(lastSelected);
+  const [selectedId, setSelectedId] = useState<string | null>(queueMemory.selected);
   const scroller = useRef<HTMLDivElement>(null);
+  const search = params.toString();
+  useEffect(() => {
+    queueMemory.search = search ? `?${search}` : "";
+  }, [search]);
 
   const columnFilters = useMemo<ColumnFiltersState>(
     () => [
@@ -95,12 +145,12 @@ export function QueuePage() {
   const clearFilters = () => setParams(new URLSearchParams(), { replace: true });
 
   const select = useCallback((id: string | null) => {
-    lastSelected = id;
+    queueMemory.selected = id;
     setSelectedId(id);
     if (id) scroller.current?.querySelector(`[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" });
   }, []);
   const open = (id: string) => {
-    lastSelected = id;
+    queueMemory.selected = id;
     navigate(`/referrals/${id}`);
   };
 
@@ -133,37 +183,31 @@ export function QueuePage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Queue" meta={meta ?? "Loading referrals…"} actions={<UploadButton />} />
+      <PageHeader
+        title="Queue"
+        meta={meta ?? (query.isError ? "Couldn't load referrals" : "Loading referrals…")}
+        actions={<UploadButton />}
+      />
 
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-4">
-        <Select value={statusFilter ?? ALL} onValueChange={(v) => setFilter("status", v)}>
-          <SelectTrigger className="w-44" data-testid="filter-status" aria-label="Filter by status">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All statuses</SelectItem>
-            {STATUS_ORDER.map((s) => (
-              <SelectItem key={s} value={s}>
-                {STATUS[s].label}
-                {counts[s] ? <span className="ml-2 text-fg-faint tabular-nums">{counts[s]}</span> : null}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={payorFilter ?? ALL} onValueChange={(v) => setFilter("payor", v)}>
-          <SelectTrigger className="w-48" data-testid="filter-payor" aria-label="Filter by payor">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All payors</SelectItem>
-            {payors.names.map((p) => (
-              <SelectItem key={p} value={p}>
-                {p}
-              </SelectItem>
-            ))}
-            {payors.none && <SelectItem value={NO_PAYOR}>No payor</SelectItem>}
-          </SelectContent>
-        </Select>
+        <FilterSelect value={statusFilter ?? ALL} onChange={(v) => setFilter("status", v)} testid="filter-status" label="Filter by status" width="w-44" resultsRef={scroller}>
+          <SelectItem value={ALL}>All statuses</SelectItem>
+          {STATUS_ORDER.map((s) => (
+            <SelectItem key={s} value={s}>
+              {STATUS[s].label}
+              {counts[s] ? <span className="ml-2 text-fg-faint tabular-nums">{counts[s]}</span> : null}
+            </SelectItem>
+          ))}
+        </FilterSelect>
+        <FilterSelect value={payorFilter ?? ALL} onChange={(v) => setFilter("payor", v)} testid="filter-payor" label="Filter by payor" width="w-48" resultsRef={scroller}>
+          <SelectItem value={ALL}>All payors</SelectItem>
+          {payors.names.map((p) => (
+            <SelectItem key={p} value={p}>
+              {p}
+            </SelectItem>
+          ))}
+          {payors.none && <SelectItem value={NO_PAYOR}>No payor</SelectItem>}
+        </FilterSelect>
         {filtered && (
           <Button variant="ghost" size="sm" onClick={clearFilters}>
             Clear filters
@@ -199,7 +243,7 @@ export function QueuePage() {
         </div>
       </div>
 
-      <div ref={scroller} className="min-h-0 flex-1 overflow-auto">
+      <div ref={scroller} tabIndex={-1} aria-label="Referrals" className="min-h-0 flex-1 overflow-auto focus-visible:outline-none">
         {query.isError && !data ? (
           <ErrorState error={query.error} onRetry={() => void query.refetch()} />
         ) : (
