@@ -189,20 +189,15 @@ export function DataTableView<T>({
     { enabled: keyboard },
   );
 
-  // progressive fill: only when rows arrive after a loading state, once per mount. The
-  // stagger class comes off once the fill has played, so rows that appear later (a
-  // filter, a sort, a refetch) show at once instead of re-staggering.
+  // progressive fill: only when rows arrive after a loading state, once per mount.
+  // Rows keep the stagger class; <FillScope> switches the animation off once the fill
+  // has played (rows that appear later show at once), without re-rendering a row.
   const wasLoading = useRef(loading);
   const [revealing, setRevealing] = useState(false);
   useEffect(() => {
     if (wasLoading.current && !loading && reveal) setRevealing(true);
     wasLoading.current = loading;
   }, [loading, reveal]);
-  useEffect(() => {
-    if (!revealing) return;
-    const t = window.setTimeout(() => setRevealing(false), STAGGER_MAX_ITEMS * STAGGER.row * 1000 + DURATION_MS.state + DURATION_MS.fast);
-    return () => window.clearTimeout(t);
-  }, [revealing]);
 
   const headCell = (align?: "left" | "right", numeric?: boolean) => cn((align === "right" || numeric) && "text-right");
 
@@ -309,7 +304,7 @@ export function DataTableView<T>({
   }
 
   return (
-    <div ref={hl.container.ref} onPointerLeave={hl.container.onPointerLeave} className={cn("relative", className)}>
+    <FillScope active={revealing} innerRef={hl.container.ref} onPointerLeave={hl.container.onPointerLeave} className={cn("relative", className)}>
       {highlight && <TravelingHighlight state={hl.state} />}
       <Table data-testid={testId} aria-label={label} aria-busy={loading || undefined} className="relative">
         <TableHeader className={cn(!stickyHeader && "static")}>
@@ -364,6 +359,40 @@ export function DataTableView<T>({
         </TableHeader>
         <TableBody>{body}</TableBody>
       </Table>
+    </FillScope>
+  );
+}
+
+/** The capped stagger plus one row's fade: how long the progressive fill can take. */
+const FILL_WINDOW_MS = STAGGER_MAX_ITEMS * STAGGER.row * 1000 + DURATION_MS.state + DURATION_MS.fast;
+
+/**
+ * Turns the rows' fill animation off once it has played. Only this wrapper re-renders
+ * when the window closes: the table arrives as `children` (the same element), so no
+ * row re-renders (a re-render of every row read as a long task right after a load).
+ */
+function FillScope({
+  active,
+  innerRef,
+  className,
+  onPointerLeave,
+  children,
+}: {
+  active: boolean;
+  innerRef: React.Ref<HTMLDivElement>;
+  className?: string;
+  onPointerLeave?: React.PointerEventHandler<HTMLDivElement>;
+  children: React.ReactNode;
+}) {
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (!active || done) return;
+    const t = window.setTimeout(() => setDone(true), FILL_WINDOW_MS);
+    return () => window.clearTimeout(t);
+  }, [active, done]);
+  return (
+    <div ref={innerRef} onPointerLeave={onPointerLeave} className={cn(done && "[&_tbody_tr]:animate-none", className)}>
+      {children}
     </div>
   );
 }
