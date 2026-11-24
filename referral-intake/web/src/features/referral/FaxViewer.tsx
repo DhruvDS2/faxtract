@@ -343,7 +343,7 @@ export default function FaxViewer({ url, boxes, selectedField, focus, hoveredFie
                         }}
                       >
                         {k === 0 && (selected || hovered) && (
-                          <span className="pointer-events-none absolute bottom-full left-0 mb-1.5 animate-fade-in rounded-sm bg-fg px-1.5 text-meta whitespace-nowrap text-bg">
+                          <span className="pointer-events-none absolute bottom-full left-0 mb-1.5 animate-fade-in rounded-sm bg-fg px-1.5 text-meta whitespace-nowrap text-bg dark:bg-bg dark:text-fg">
                             {labelFor(field)}
                           </span>
                         )}

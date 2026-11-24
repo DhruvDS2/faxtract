@@ -80,10 +80,9 @@ export function WhyItStopped({ record, reasons, blocking, onGo }: Props) {
           <li className="flex items-baseline gap-4 py-1">
             <div className="min-w-0 flex-1">
               <p className="text-body text-fg">
-                <span className="font-medium">RIS: </span>
                 {o.ack_code && o.ack_code !== "AA"
-                  ? `the RIS rejected the order (${o.ack_code}) on the ${ordinalAttempt(o.attempts)}.`
-                  : `the RIS didn't acknowledge the order on the ${ordinalAttempt(o.attempts)}. Retry send once it's back up.`}
+                  ? `The RIS rejected the order (${o.ack_code}) on the ${ordinalAttempt(o.attempts)}. Fix the cause, then retry send.`
+                  : `The RIS didn't acknowledge the order on the ${ordinalAttempt(o.attempts)}. Retry send once it's back up.`}
               </p>
               {o.last_error && <p className="font-mono text-code break-words text-fg-faint">{o.last_error}</p>}
             </div>
