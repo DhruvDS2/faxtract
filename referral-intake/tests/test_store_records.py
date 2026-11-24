@@ -45,6 +45,7 @@ def test_corrections_survive_a_new_engine(db):
     assert [(c.field, c.original_value, c.corrected_value, c.original_confidence) for c in got] == [
         ("patient_first_name", "Ciara", "Clara", 0.95)]
     assert got[0].corrected_at == naive_utc.replace(tzinfo=timezone.utc)
+    assert got[0].corrected_at.utcoffset() == timedelta(0)  # UTC out, whatever the DB session zone
     assert store.list_corrections("other000") == []
 
 

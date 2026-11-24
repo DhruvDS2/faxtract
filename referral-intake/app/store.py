@@ -62,10 +62,11 @@ class RisSendRow(Base):
 
 
 def _aware(dt: datetime | None) -> datetime | None:
-    """Store every timestamp as UTC; a naive one is taken to be UTC already."""
+    """Every timestamp in and out is UTC-aware; a naive one is taken to be UTC already
+    (Postgres hands timestamptz back in the session's zone, so reads go through here too)."""
     if dt is None:
         return None
-    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
 
 
 # --------------------------------------------------------------------------
@@ -203,7 +204,7 @@ def list_corrections(referral_id: str | None = None) -> list[Correction]:
         rows = session.execute(query).scalars().all()
         return [Correction(referral_id=r.referral_id, field=r.field, original_value=r.original_value,
                            corrected_value=r.corrected_value, original_confidence=r.original_confidence,
-                           corrected_at=r.corrected_at) for r in rows]
+                           corrected_at=_aware(r.corrected_at)) for r in rows]
 
 
 # --------------------------------------------------------------------------
@@ -228,7 +229,7 @@ def list_sends(referral_id: str) -> list[dict]:
             select(RisSendRow).where(RisSendRow.referral_id == referral_id).order_by(RisSendRow.id)
         ).scalars().all()
         return [{"order_id": r.order_id, "attempt": r.attempt, "ack_code": r.ack_code,
-                 "error": r.error, "sent_at": r.sent_at} for r in rows]
+                 "error": r.error, "sent_at": _aware(r.sent_at)} for r in rows]
 
 
 def order_rows(ris_order_ids: set[str]) -> list[RisOrderRow]:
