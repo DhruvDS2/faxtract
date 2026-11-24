@@ -153,7 +153,7 @@ export function DetailHeader({ id, name, status, flow, graphLink, actions }: Pro
             </span>
           </StatusLine>
         ) : (
-          <div className="flex h-5 items-center gap-2" data-testid="detail-status" aria-busy>
+          <div className="flex h-5 items-center gap-2" aria-busy>
             <Skeleton className="h-2.5 w-64" />
           </div>
         )
