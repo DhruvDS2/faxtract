@@ -22,7 +22,10 @@ from app.policy import load_policies
 
 @lru_cache(maxsize=1)
 def _model():
-    return SentenceTransformer("all-MiniLM-L6-v2")
+    # CPU on purpose: one short query embeds in ~7 ms, every time. On Apple's MPS
+    # backend each new input length compiled kernels first, stalling a retrieve
+    # for seconds mid-demo; the vectors agree with MPS to ~1e-7.
+    return SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
 
 
 def embed(texts):

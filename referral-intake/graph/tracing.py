@@ -81,14 +81,14 @@ def traced(name: str, body: Callable[[dict], dict], *,
         runs = (state.get("node_runs") or {}).get(name, 0) + 1
         attempt = attempt_of(state) if attempt_of else runs
         started = utcnow()
-        t0 = time.perf_counter()
 
         def close(status, *, branch=None, delta=None, error=None, extra=None, usage=None):
             usage = usage or {}
+            elapsed_ms = round((time.perf_counter() - t0) * 1000, 3)
             _emit(TraceEvent(
                 referral_id=referral_id, run_id=run_id, pipeline="graph", node=name,
                 status=status, started_at=started,
-                duration_ms=round((time.perf_counter() - t0) * 1000, 3),
+                duration_ms=elapsed_ms,
                 cost_usd=token_cost(usage), tokens_in=int(usage.get("input_tokens", 0) or 0),
                 tokens_out=int(usage.get("output_tokens", 0) or 0),
                 attempt=attempt, branch=branch, detail=json_safe(extra or {}), error=error,
@@ -97,6 +97,7 @@ def traced(name: str, body: Callable[[dict], dict], *,
 
         _emit(TraceEvent(referral_id=referral_id, run_id=run_id, pipeline="graph", node=name,
                          status="running", started_at=started, duration_ms=0.0, attempt=attempt))
+        t0 = time.perf_counter()  # the node's own work: excludes writing its trace rows
         try:
             delta = body(state) or {}
         except GraphInterrupt as exc:
@@ -106,6 +107,7 @@ def traced(name: str, body: Callable[[dict], dict], *,
             close("error", error=f"{type(exc).__name__}: {exc}")
             raise
 
+        elapsed_ms = round((time.perf_counter() - t0) * 1000, 3)
         merged = {**state, **delta}
         if router is not None:
             label = router(merged)
@@ -121,7 +123,7 @@ def traced(name: str, body: Callable[[dict], dict], *,
               usage=delta.get("usage") if name == "extract" else None)
 
         out = dict(delta)
-        out["stage_timings_ms"] = {name: round((time.perf_counter() - t0) * 1000, 3)}
+        out["stage_timings_ms"] = {name: elapsed_ms}
         out["node_runs"] = {name: runs}
         return out
 
