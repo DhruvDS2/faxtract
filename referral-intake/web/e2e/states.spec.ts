@@ -6,7 +6,7 @@
  *   SHOTS_DIR=docs/design/after/states (default; relative to the repo root, or absolute)
  *
  * Modes come from src/api/mock.ts (normal, empty, error, ris-down, slow,
- * extraction-pending), set through localStorage "mock" before the app loads. The
+ * extraction-pending, long-names, one), set through localStorage "mock" before the app loads. The
  * theme is set exactly like design-shots.spec.ts (localStorage "theme" + .dark).
  * Shots: <mode>-<screen>-<theme>.png. Nothing here talks to a real backend.
  */
@@ -24,13 +24,14 @@ const first = (status: string) => data.records.find((r) => r.status === status)?
 const REVIEW = first("needs_review");
 const RIS_ERROR = first("ris_error");
 const PENDING = "upending"; // created by mock.ts in extraction-pending mode
+const ONE = "m02005"; // the single referral in mock "one" mode
 
-const MODES = ["normal", "empty", "error", "ris-down", "slow", "extraction-pending"] as const;
+const MODES = ["normal", "empty", "error", "ris-down", "slow", "extraction-pending", "long-names", "one"] as const;
 type Mode = (typeof MODES)[number];
 
 function screens(mode: Mode) {
-  const detail = mode === "extraction-pending" ? PENDING : REVIEW;
-  const graph = mode === "extraction-pending" ? PENDING : mode === "ris-down" ? RIS_ERROR : REVIEW;
+  const detail = mode === "extraction-pending" ? PENDING : mode === "one" ? ONE : REVIEW;
+  const graph = mode === "extraction-pending" ? PENDING : mode === "one" ? ONE : mode === "ris-down" ? RIS_ERROR : REVIEW;
   return [
     { name: "queue", url: "/queue" },
     { name: "detail", url: `/referrals/${detail}` },
