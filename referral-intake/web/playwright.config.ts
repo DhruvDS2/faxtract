@@ -18,6 +18,7 @@ export default defineConfig({
   },
   projects: [
     { name: "demo", testMatch: /demo\.spec\.ts/, use: { video: { mode: "on", size: { width: 1440, height: 900 } }, viewport: { width: 1440, height: 900 } } },
-    { name: "screens", testMatch: /screens\.spec\.ts/, use: { viewport: { width: 1440, height: 900 } } },
+    { name: "screens", testMatch: /(^|\/)screens\.spec\.ts/, use: { viewport: { width: 1440, height: 900 } } },
+    { name: "design", testMatch: /design-shots\.spec\.ts/, use: { viewport: { width: 1440, height: 900 } } },
   ],
 });
