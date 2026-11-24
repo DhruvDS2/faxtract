@@ -13,9 +13,6 @@ import { RevealScope, Section } from "./parts";
 
 type Query = { isPending: boolean; isError: boolean; isFetching: boolean; error: unknown; refetch: () => unknown };
 
-// PageHeader truncates its title to one line; the headline is a sentence, so let it wrap.
-const WRAP_TITLE = "[&_h1]:whitespace-normal";
-
 /** The page's display line: the result as a sentence, or what's missing and how to make it. */
 export function BenchmarkHeader({
   query,
@@ -31,7 +28,7 @@ export function BenchmarkHeader({
     return (
       <PageHeader
         divider={false}
-        className={WRAP_TITLE}
+        wrap
         title={headline(report.v1.retrieval_hit_at_1_with_cpt, report.v2.retrieval_hit_at_1_with_cpt)}
         meta={benchmarkMeta(report)}
       />
@@ -183,31 +180,15 @@ export function BenchmarkBars({ report }: { report: BenchmarkReport }) {
             countRow("hit-with-cpt", "Right policy, with CPT", v1.retrieval_hit_at_1_with_cpt, v2.retrieval_hit_at_1_with_cpt),
             countRow("hit-without-cpt", "Right policy, CPT removed", v1.retrieval_hit_at_1_without_cpt, v2.retrieval_hit_at_1_without_cpt),
             countRow("auto", `Auto-approved at ${report.threshold}`, auto(v1), auto(v2)),
+            {
+              id: "latency",
+              label: "Pipeline latency, p50 / p95",
+              plain: true,
+              values: { v1: v1.latency_ms.p50, v2: v2.latency_ms.p50 },
+              display: { v1: pctl(v1.latency_ms), v2: pctl(v2.latency_ms) },
+            },
           ]}
         />
-        <table className="w-full table-fixed border-separate border-spacing-0 text-body" data-row="latency">
-          <caption className="sr-only">Pipeline latency, p50 and p95</caption>
-          <colgroup>
-            <col className="w-2/5" />
-            <col />
-            <col />
-          </colgroup>
-          <tbody>
-            <tr className="h-10">
-              <th scope="row" className="truncate border-t border-border pr-4 text-left font-normal text-fg">
-                Pipeline latency, p50 / p95
-              </th>
-              <td className="border-t border-border pl-4 text-right text-fg tabular-nums">
-                <span className="sr-only">v1 baseline: </span>
-                {pctl(v1.latency_ms)}
-              </td>
-              <td className="border-t border-border pl-4 text-right text-fg tabular-nums">
-                <span className="sr-only">v2 graph: </span>
-                {pctl(v2.latency_ms)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
         <p className="mt-2 text-meta text-fg-muted tabular-nums">
           Time inside each pipeline, without human review.
           {replay && " Extraction is replayed, so the model call isn't counted"}

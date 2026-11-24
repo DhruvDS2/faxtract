@@ -10,6 +10,11 @@ export type BarRow = {
   display?: Record<string, React.ReactNode>;
   /** Scale for this row (default: the row's largest value). */
   max?: number;
+  /**
+   * A value row without bars: the values right-aligned in each series column, under a
+   * hairline. For measures that don't share a scale with the bars (e.g. latency).
+   */
+  plain?: boolean;
 };
 
 const SHADE = ["bg-chart-1", "bg-chart-2"];
@@ -66,6 +71,23 @@ export function BarComparison({
         {rows.map((r) => {
           const vals = series.map((s) => r.values[s.key] ?? null);
           const max = r.max ?? Math.max(0, ...vals.map((v) => v ?? 0));
+          if (r.plain)
+            return (
+              <tr key={r.id} className="h-10" data-row={r.id} data-plain="">
+                <th scope="row" className="truncate border-t border-border pr-4 text-left font-normal text-fg">
+                  {r.label}
+                </th>
+                {series.map((s) => {
+                  const v = r.values[s.key];
+                  return (
+                    <td key={s.key} className="border-t border-border pl-4 text-right text-fg tabular-nums">
+                      <span className="sr-only">{typeof s.label === "string" ? `${s.label}: ` : ""}</span>
+                      {r.display?.[s.key] ?? (v == null ? "-" : format(v))}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
           return (
             <tr key={r.id} className="h-10" data-row={r.id}>
               <th scope="row" className="truncate pr-4 text-left font-normal text-fg">

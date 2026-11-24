@@ -44,13 +44,15 @@ export type AccordionItemProps = {
   title: React.ReactNode;
   /** Right-aligned one-line summary that stays visible when collapsed ("Member not found"). */
   summary?: React.ReactNode;
+  /** One control beside the header, outside the trigger (clicking it doesn't toggle the panel). */
+  action?: React.ReactNode;
   children: React.ReactNode;
   disabled?: boolean;
   className?: string;
   contentClassName?: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "title" | "children">;
 
-export function AccordionItem({ value, title, summary, children, disabled, className, contentClassName, ...rest }: AccordionItemProps) {
+export function AccordionItem({ value, title, summary, action, children, disabled, className, contentClassName, ...rest }: AccordionItemProps) {
   const open = useContext(OpenValue) === value;
   const { reduce } = useMotionPrefs();
   const marker = useTransitionMarker();
@@ -58,10 +60,11 @@ export function AccordionItem({ value, title, summary, children, disabled, class
   return (
     <AccordionPrimitive.Item value={value} disabled={disabled} className={cn("border-b border-border", className)} {...rest}>
       <AccordionPrimitive.Header asChild>
-        <h3>
+        <h3 className="flex items-center">
           <AccordionPrimitive.Trigger
             className={cn(
-              "group flex h-11 w-full cursor-pointer items-center gap-2 px-6 text-left text-body",
+              "group flex h-11 min-w-0 flex-1 cursor-pointer items-center gap-2 pl-6 text-left text-body",
+              action ? "pr-3" : "pr-6",
               "transition-colors duration-fast ease-enter hover:bg-surface disabled:cursor-not-allowed disabled:opacity-45",
               "focus-visible:-outline-offset-2",
             )}
@@ -73,6 +76,7 @@ export function AccordionItem({ value, title, summary, children, disabled, class
             <span className="min-w-0 truncate font-medium text-fg">{title}</span>
             {summary && <span className="ml-auto min-w-0 shrink truncate pl-4 text-right text-fg-muted">{summary}</span>}
           </AccordionPrimitive.Trigger>
+          {action && <div className="flex shrink-0 items-center pr-6">{action}</div>}
         </h3>
       </AccordionPrimitive.Header>
       <AccordionPrimitive.Content forceMount className="overflow-hidden">
