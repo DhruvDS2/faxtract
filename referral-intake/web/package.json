@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "lint:tokens": "node scripts/lint-tokens.mjs",
     "check:contrast": "node scripts/contrast.mjs",
+    "check:bundle": "node scripts/measure-initial-js.mjs",
     "preview": "vite preview",
     "e2e": "playwright test"
   },
