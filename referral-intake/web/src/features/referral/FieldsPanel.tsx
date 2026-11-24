@@ -162,7 +162,6 @@ function FieldRow({ field, record, editor, flags, confidence, hasBox, selected, 
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       aria-pressed={clickable ? selected : undefined}
-      title={clickable ? "Show on the fax" : undefined}
       onKeyDown={
         clickable
           ? (e) => {

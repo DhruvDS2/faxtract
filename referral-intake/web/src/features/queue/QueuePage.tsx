@@ -193,7 +193,7 @@ export function QueuePage() {
         <FilterSelect value={statusFilter ?? ALL} onChange={(v) => setFilter("status", v)} testid="filter-status" label="Filter by status" width="w-44" resultsRef={scroller}>
           <SelectItem value={ALL}>All statuses</SelectItem>
           {STATUS_ORDER.map((s) => (
-            <SelectItem key={s} value={s}>
+            <SelectItem key={s} value={s} aria-label={STATUS[s].label}>
               {STATUS[s].label}
               {counts[s] ? <span className="ml-2 text-fg-faint tabular-nums">{counts[s]}</span> : null}
             </SelectItem>
