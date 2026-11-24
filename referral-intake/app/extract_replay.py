@@ -81,5 +81,6 @@ def extract(pdf_path, pace_s: float = 0.0) -> tuple[Referral, dict]:
     if pace_s and record.get("latency_ms"):
         time.sleep(min(pace_s, record["latency_ms"] / 1000))
     usage = dict(record.get("usage") or {})
-    usage["replayed_latency_ms"] = record.get("latency_ms")
+    # token_usage is dict[str, int] everywhere (ProcessedReferral, ReferralRecord)
+    usage["replayed_latency_ms"] = int(round(record.get("latency_ms") or 0))
     return referral, usage
