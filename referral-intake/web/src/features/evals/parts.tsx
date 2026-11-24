@@ -51,7 +51,7 @@ export const isNotFound = (e: unknown) => e instanceof ApiError && e.status === 
 
 const HASH = /^[0-9a-f]{16,}$/i;
 
-const scalar = (v: unknown) =>
+const scalar = (v: unknown): string =>
   v === null || v === undefined ? "-" : Array.isArray(v) ? v.map(scalar).join(", ") : typeof v === "object" ? JSON.stringify(v) : String(v);
 
 /** Render an arbitrary JSON value from an artifact: hashes shortened (full value on hover),
