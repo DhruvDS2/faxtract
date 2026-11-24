@@ -5,25 +5,29 @@
  * structure the API returns.
  */
 import type { GraphEdge, GraphStructure, ReferralStatus, TraceEvent, TraceStatus } from "@/contracts";
-import type { Tone } from "@/lib/status";
+import { isSettling } from "@/api/queries";
+import type { StatusTone } from "@/lib/status";
 
+/** The frozen `data-state` values (docs/CONTRACTS.md §15). */
 export type NodeState = "done" | "running" | "paused" | "skipped" | "error" | "idle";
 
-export const NODE_STATE: Record<NodeState, { label: string; tone: Tone | "accent" }> = {
+/** Plain words and the status tone for each state (the tone drives a StatusDot). */
+export const NODE_STATE: Record<NodeState, { label: string; tone: StatusTone }> = {
   done: { label: "Done", tone: "ok" },
-  running: { label: "Running", tone: "accent" },
+  running: { label: "Running", tone: "idle" },
   paused: { label: "Paused", tone: "warn" },
-  error: { label: "Error", tone: "bad" },
-  skipped: { label: "Not reached", tone: "idle" },
-  idle: { label: "Not run", tone: "idle" },
+  error: { label: "Failed", tone: "bad" },
+  skipped: { label: "Not reached", tone: "rejected" },
+  idle: { label: "Not run yet", tone: "idle" },
 };
 
-export const TRACE_LABEL: Record<TraceStatus, string> = {
-  running: "Running",
-  ok: "OK",
-  error: "Error",
-  interrupted: "Interrupted",
-  skipped: "Skipped",
+/** One attempt's outcome, in plain words. */
+export const TRACE_LABEL: Record<TraceStatus, { label: string; tone: StatusTone }> = {
+  running: { label: "Running", tone: "idle" },
+  ok: { label: "Done", tone: "ok" },
+  error: { label: "Failed", tone: "bad" },
+  interrupted: { label: "Paused", tone: "warn" },
+  skipped: { label: "Skipped", tone: "rejected" },
 };
 
 /** One run of one node: its `running` event plus the event that closed it. */
@@ -41,9 +45,7 @@ export type Execution = {
 
 export const edgeKey = (e: Pick<GraphEdge, "source" | "target">) => `${e.source}->${e.target}`;
 
-/** Statuses where the pipeline is still working on the referral (mirrors api/queries). */
-export const isSettling = (s: ReferralStatus | undefined) =>
-  s === "processing" || s === "approved" || s === "auto_approved";
+export { isSettling };
 
 export function executions(events: TraceEvent[]): Execution[] {
   const sorted = [...events].sort((a, b) => a.seq - b.seq);
@@ -207,3 +209,37 @@ export function subDiff(before: unknown, after: unknown) {
   }
   return { rows, same };
 }
+
+// ---------- reveal order and per-step totals ----------
+
+/**
+ * The order steps first ran in (the path taken), with the start first and the end
+ * last when reached. The Decimals reveal lights them in this order.
+ */
+export function revealSequence(structure: GraphStructure, run: GraphRun): string[] {
+  const seq: string[] = [];
+  const add = (id: string) => {
+    if (!seq.includes(id)) seq.push(id);
+  };
+  if (run.executions.length) for (const n of structure.nodes) if (n.kind === "start" && run.states.get(n.id) === "done") add(n.id);
+  for (const ex of run.executions) add(ex.node);
+  for (const n of structure.nodes) if (n.kind === "end" && run.states.get(n.id) === "done") add(n.id);
+  return seq;
+}
+
+export type StepTotals = { ms: number; cost: number; tokensIn: number; tokensOut: number; attempts: number };
+
+export function stepTotals(execs: Execution[]): StepTotals {
+  const closed = execs.filter((e) => e.close);
+  return {
+    ms: closed.reduce((s, e) => s + e.close!.duration_ms, 0),
+    cost: closed.reduce((s, e) => s + e.close!.cost_usd, 0),
+    tokensIn: closed.reduce((s, e) => s + e.close!.tokens_in, 0),
+    tokensOut: closed.reduce((s, e) => s + e.close!.tokens_out, 0),
+    attempts: execs.length,
+  };
+}
+
+/** Milliseconds a running execution has been going (server clock, clamped at 0). */
+export const elapsedMs = (ex: Execution, now = Date.now()) =>
+  Math.max(0, now - new Date((ex.open ?? ex.close)!.started_at).getTime());
