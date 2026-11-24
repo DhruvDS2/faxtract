@@ -9,7 +9,8 @@ import ast
 import re
 import sys
 import tomllib
-from importlib.metadata import packages_distributions
+from importlib.metadata import PackageNotFoundError, packages_distributions
+from importlib.metadata import requires as metadata_requires
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,11 +29,31 @@ def _dist_name(requirement: str) -> str:
     return _norm(re.match(r"[A-Za-z0-9][A-Za-z0-9._-]*", requirement).group(0))
 
 
+def _extras_deps(requirement: str) -> set[str]:
+    """Distributions a declared extra pulls in, e.g. psycopg[pool] -> psycopg-pool."""
+    m = re.match(r"\s*([A-Za-z0-9._-]+)\s*\[([^\]]+)\]", requirement)
+    if not m:
+        return set()
+    try:
+        reqs = metadata_requires(m.group(1)) or []
+    except PackageNotFoundError:
+        return set()
+    out = set()
+    for extra in (e.strip() for e in m.group(2).split(",")):
+        for r in reqs:
+            if re.search(rf"extra\s*==\s*['\"]{re.escape(extra)}['\"]", r):
+                out.add(_dist_name(r))
+    return out
+
+
 def declared(include_dev: bool) -> set[str]:
     reqs = list(PYPROJECT["project"]["dependencies"])
     if include_dev:
         reqs += PYPROJECT["project"]["optional-dependencies"]["dev"]
-    return {_dist_name(r) for r in reqs}
+    names = {_dist_name(r) for r in reqs}
+    for r in reqs:
+        names |= _extras_deps(r)
+    return names
 
 
 def imports(paths) -> dict[str, list[str]]:
@@ -81,6 +102,10 @@ def test_test_imports_are_declared():
     bad = _undeclared(imports(_py(["tests"])), declared(include_dev=True))
     assert not bad, "tests import packages that neither the runtime deps nor [dev] declare: " + "; ".join(
         f"{top} (from {', '.join(d)}; e.g. {', '.join(w)})" for top, (d, w) in bad.items())
+
+
+def test_extras_count_as_declared():
+    assert {"psycopg-binary", "psycopg-pool"} <= declared(include_dev=False)
 
 
 def test_pins_and_removals():

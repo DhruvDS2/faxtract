@@ -61,6 +61,12 @@ SDK_IMPLICIT = {
     "HF_HUB_OFFLINE": "huggingface_hub reads it (sentence-transformers model loading)",
 }
 
+# Read by code but deliberately not in .env.example: test-harness settings.
+TEST_HARNESS = {
+    "TEST_DATABASE_URL": "the Postgres server pytest's `db` fixture creates databases on "
+                         "(tests/conftest.py); `make test` (scripts/demo.py) sets it",
+}
+
 SKIP_DIRS = {"tests", "web", "node_modules", ".venv", "venv", ".demo", "build", "dist",
              "__pycache__", ".git", ".pytest_cache"}
 
@@ -177,7 +183,8 @@ def test_env_example_is_well_formed():
 
 def test_code_reads_only_declared_vars():
     declared = set(env_example_vars())
-    undeclared = {name: where for name, where in env_reads().items() if name not in declared}
+    undeclared = {name: where for name, where in env_reads().items()
+                  if name not in declared and name not in TEST_HARNESS}
     assert not undeclared, (
         "code reads environment variables that are not in .env.example / CONTRACTS section 3 "
         "(declare them via the orchestrator, or stop reading them): "
