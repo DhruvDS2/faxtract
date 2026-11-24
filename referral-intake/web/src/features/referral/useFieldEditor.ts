@@ -2,47 +2,72 @@ import { useMemo, useState } from "react";
 import { ApiError } from "@/api/client";
 import { usePatch } from "@/api/queries";
 import type { ReferralRecord } from "@/contracts";
-import { notify } from "./notify";
 import { STATUS } from "@/lib/status";
-import { FIELD_ORDER, fieldMeta, fromDraft, toDraft } from "./fields";
+import { FIELD_ORDER, fieldMeta, fromDraft, parses, toDraft } from "./fields";
 import { plural } from "./format";
+import { notify } from "./notify";
 
 export type FieldEditor = ReturnType<typeof useFieldEditor>;
 
-/** Inline edit mode for the extracted fields: draft, changed-only PATCH, 422 → per-field errors. */
-export function useFieldEditor(record: ReferralRecord) {
-  const patch = usePatch(record.id);
+/** What the server said about a value it rejected (422), and the value it rejected. */
+type Rejection = { value: string; message: string };
+
+/**
+ * Inline edit mode for the extracted fields: a draft, a changed-only PATCH, and a 422
+ * mapped onto each field. A rejected field stays in its error state until its value
+ * parses; then it shows as corrected (the server re-validates on save).
+ */
+export function useFieldEditor(id: string, record: ReferralRecord | undefined) {
+  const patch = usePatch(id);
   const [editing, setEditing] = useState(false);
   const [initial, setInitial] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState<Record<string, string>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  /** Bumped on every save attempt that came back with field errors, so the panel can refocus. */
+  const [rejected, setRejected] = useState<Record<string, Rejection>>({});
+  /** Fields that were rejected and whose value now parses. */
+  const [corrected, setCorrected] = useState<Record<string, true>>({});
+  /** Bumped on every save that came back with field errors, so the panel can refocus. */
   const [errorRound, setErrorRound] = useState(0);
+  /** Errors the server raised for fields this screen doesn't show. */
+  const [otherErrors, setOtherErrors] = useState<string[]>([]);
 
-  const changed = useMemo(
-    () => FIELD_ORDER.filter((f) => (draft[f] ?? "").trim() !== (initial[f] ?? "").trim()),
-    [draft, initial],
-  );
+  const changed = useMemo(() => FIELD_ORDER.filter((f) => (draft[f] ?? "").trim() !== (initial[f] ?? "").trim()), [draft, initial]);
+
+  const errors = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const [f, r] of Object.entries(rejected)) if (!corrected[f]) out[f] = r.message;
+    return out;
+  }, [rejected, corrected]);
+
+  const reset = () => {
+    setRejected({});
+    setCorrected({});
+    setOtherErrors([]);
+  };
 
   const start = () => {
+    if (!record) return;
     const d = toDraft(record.referral);
     setInitial(d);
     setDraft(d);
-    setErrors({});
+    reset();
     setEditing(true);
   };
 
   const cancel = () => {
     setEditing(false);
-    setErrors({});
+    reset();
   };
 
   const setValue = (field: string, value: string) => {
     setDraft((d) => ({ ...d, [field]: value }));
-    setErrors((e) => {
-      if (!(field in e)) return e;
-      const next = { ...e };
-      delete next[field];
+    const r = rejected[field];
+    if (!r) return;
+    const fixed = value.trim() !== r.value.trim() && parses(field, value);
+    setCorrected((c) => {
+      if (fixed === !!c[field]) return c;
+      const next = { ...c };
+      if (fixed) next[field] = true;
+      else delete next[field];
       return next;
     });
   };
@@ -51,6 +76,7 @@ export function useFieldEditor(record: ReferralRecord) {
     if (patch.isPending) return;
     if (!changed.length) {
       setEditing(false);
+      reset();
       notify.info("No changes to save");
       return;
     }
@@ -60,36 +86,48 @@ export function useFieldEditor(record: ReferralRecord) {
       {
         onSuccess: (rec) => {
           setEditing(false);
-          setErrors({});
+          reset();
           notify.success(`Saved ${plural(changed.length, "correction")}`, {
             description:
               rec.status === "needs_review"
-                ? `Validation re-ran${rec.pipeline === "graph" ? " and the graph paused again for approval" : ""}.`
-                : `Status is now ${STATUS[rec.status].label.toLowerCase()}.`,
+                ? `Validation re-ran${rec.pipeline === "graph" ? ". The graph is paused for your approval." : "."}`
+                : `It's now ${STATUS[rec.status].label.toLowerCase()}.`,
           });
         },
         onError: (err) => {
           if (err instanceof ApiError && err.status === 422) {
-            const byField: Record<string, string> = {};
+            const byField: Record<string, Rejection> = {};
             const other: string[] = [];
             for (const e of err.body?.errors ?? []) {
-              if (FIELD_ORDER.includes(e.field as never)) byField[e.field] = e.message;
+              if (FIELD_ORDER.includes(e.field as never)) byField[e.field] = { value: draft[e.field] ?? "", message: e.message };
               else other.push(`${fieldMeta(e.field).label}: ${e.message}`);
             }
-            setErrors(byField);
+            setRejected(byField);
+            setCorrected({});
+            setOtherErrors(other.length || Object.keys(byField).length ? other : [err.message]);
             setErrorRound((n) => n + 1);
-            notify.error("Some fields need fixing", {
-              description: other.length ? other.join("; ") : `${plural(Object.keys(byField).length || 1, "field")} could not be saved.`,
-            });
           } else if (err instanceof ApiError && err.status === 409) {
-            notify.error("Can't save these edits", { description: err.message });
+            notify.error("Couldn't save these edits", { description: err.message });
           } else {
-            notify.error("Save failed", { description: err instanceof Error ? err.message : String(err) });
+            notify.error("Couldn't save", { description: err instanceof Error ? err.message : String(err) });
           }
         },
       },
     );
   };
 
-  return { editing, draft, errors, errorRound, changed, saving: patch.isPending, start, cancel, setValue, save };
+  return {
+    editing,
+    draft,
+    errors,
+    corrected,
+    otherErrors,
+    errorRound,
+    changed,
+    saving: patch.isPending,
+    start,
+    cancel,
+    setValue,
+    save,
+  };
 }

@@ -3,17 +3,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/api/client";
 import { keys, useApprove, useReject, useRetrySend } from "@/api/queries";
 import { REJECTABLE, RETRYABLE, REVIEWABLE, type Flag, type ReferralRecord } from "@/contracts";
-import { notify } from "./notify";
-import { STATUS } from "@/lib/status";
 import { plural } from "./format";
+import { notify } from "./notify";
 
 export type ReviewActions = ReturnType<typeof useReviewActions>;
 
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
-/** Approve / reject / retry-send with the toasts and 409 handling the detail screen needs. */
-export function useReviewActions(record: ReferralRecord) {
-  const id = record.id;
+/**
+ * Approve / reject / retry-send, with 409 handling. Approve's progress is narrated by
+ * the header (useApproveFlow), so success here is quiet; failures toast.
+ */
+export function useReviewActions(id: string, record: ReferralRecord | undefined) {
   const qc = useQueryClient();
   const approveM = useApprove(id);
   const rejectM = useReject(id);
@@ -23,50 +24,42 @@ export function useReviewActions(record: ReferralRecord) {
 
   const refetch = () => void qc.invalidateQueries({ queryKey: keys.referral(id) });
 
-  const canApprove = REVIEWABLE.includes(record.status);
-  const canEdit = REVIEWABLE.includes(record.status);
-  const canReject = REJECTABLE.includes(record.status);
-  const canRetry = RETRYABLE.includes(record.status);
+  const status = record?.status;
+  const canApprove = !!status && REVIEWABLE.includes(status);
+  const canEdit = canApprove;
+  const canReject = !!status && REJECTABLE.includes(status);
+  const canRetry = !!status && RETRYABLE.includes(status);
   const busy = approveM.isPending || rejectM.isPending || retryM.isPending;
 
-  const approve = () => {
-    if (!canApprove || busy) return;
+  /** Resolves true when the server took the approval (whatever the RIS then did). */
+  const approve = async (): Promise<boolean> => {
+    if (!canApprove || busy) return false;
     setBlocking([]);
-    approveM.mutate(
-      {},
-      {
-        onSuccess: (rec) => {
-          if (rec.status === "sent_to_ris")
-            notify.success("Approved and sent to RIS", { description: `RIS acknowledged the order (${rec.order.ack_code ?? "no ACK code"}).` });
-          else if (rec.status === "ris_error")
-            notify.error("Approved, but the RIS did not take the order", { description: rec.order.last_error ?? undefined });
-          else notify.success(`Approved · ${STATUS[rec.status].label}`);
-        },
-        onError: (err) => {
-          if (err instanceof ApiError && err.status === 409) {
-            const flags = err.body?.flags ?? [];
-            setBlocking(flags);
-            notify.error("Approve blocked", {
-              description: flags.length ? `${plural(flags.length, "validation error")} must be fixed first.` : err.message,
-            });
-            refetch();
-          } else notify.error("Approve failed", { description: message(err) });
-        },
-      },
-    );
+    try {
+      const rec = await approveM.mutateAsync({});
+      if (rec.status === "ris_error") notify.error("Approved, but the RIS didn't acknowledge", { description: rec.order.last_error ?? undefined });
+      return true;
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        const flags = err.body?.flags ?? [];
+        setBlocking(flags);
+        if (!flags.length) notify.error("Couldn't approve", { description: err.message });
+        refetch();
+      } else notify.error("Couldn't approve", { description: message(err) });
+      return false;
+    }
   };
 
   /** Resolves to an error message for the dialog to show, or null on success. */
   const reject = async (reason: string): Promise<string | null> => {
     try {
-      const rec = await rejectM.mutateAsync({ reason });
+      await rejectM.mutateAsync({ reason });
       setBlocking([]);
-      notify.success("Referral rejected", { description: rec.reviews.at(-1)?.note ?? reason });
+      notify.success("Referral rejected", { description: "No order goes to the RIS." });
       return null;
     } catch (err) {
       if (err instanceof ApiError && err.status === 422) return err.body?.errors[0]?.message ?? err.message;
       if (err instanceof ApiError && err.status === 409) {
-        notify.error("Can't reject", { description: err.message });
         refetch();
         return err.message;
       }
@@ -80,10 +73,10 @@ export function useReviewActions(record: ReferralRecord) {
       onSuccess: (rec) => {
         if (rec.status === "sent_to_ris")
           notify.success("Order sent", { description: `RIS acknowledged it (${rec.order.ack_code ?? "no ACK code"}) on attempt ${rec.order.attempts}.` });
-        else notify.error("Retry failed", { description: rec.order.last_error ?? STATUS[rec.status].label });
+        else notify.error("RIS still didn't acknowledge", { description: rec.order.last_error ?? undefined });
       },
       onError: (err) => {
-        notify.error("Retry failed", { description: message(err) });
+        notify.error("Couldn't retry the send", { description: message(err) });
         if (err instanceof ApiError && err.status === 409) refetch();
       },
     });
@@ -94,6 +87,7 @@ export function useReviewActions(record: ReferralRecord) {
     reject,
     retry,
     blocking,
+    blockingSummary: blocking.length ? `${plural(blocking.length, "validation error")} must be fixed first` : null,
     clearBlocking: () => setBlocking([]),
     canApprove,
     canEdit,

@@ -1,65 +1,67 @@
 import { useEffect, useRef } from "react";
-import { Check, X } from "lucide-react";
 import type { RetrievalCompare, RetrieverRun } from "@/contracts";
 import { ApiError } from "@/api/client";
 import { useRetrievalCompare } from "@/api/queries";
 import { Code } from "@/components/Code";
 import { ErrorState } from "@/components/States";
-import { Badge } from "@/components/ui/badge";
+import { StatusDot } from "@/components/StatusPill";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtMs } from "@/lib/format";
+import { useMotionPrefs } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { Excerpt } from "./Excerpt";
-import { Section } from "./Section";
 
-/** "Compare v1 vs v2": the same query through v1 keyword retrieval and v2 3-step hybrid RAG. */
+/** "Compare v1 vs v2": the same query through v1 keyword retrieval and v2 hybrid RAG, side by side. */
 export function ComparePanel({ id, onClose }: { id: string; onClose: () => void }) {
   const q = useRetrievalCompare(id, true);
   const ref = useRef<HTMLElement>(null);
+  const { reduce } = useMotionPrefs();
 
   useEffect(() => {
-    ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, []);
+    ref.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  }, [reduce]);
 
   const conflict = q.error instanceof ApiError && q.error.status === 409;
 
   return (
-    <Section
+    <section
       ref={ref}
       id="compare"
       data-testid="compare-panel"
-      title="Retrieval: v1 vs v2"
-      meta="Same query, both retrievers, side by side"
+      aria-labelledby="compare-title"
       aria-busy={q.isPending}
-      actions={
-        <Button variant="ghost" size="icon" className="size-7" aria-label="Close comparison" onClick={onClose}>
-          <X />
-        </Button>
-      }
+      className="mt-4 animate-fade-in scroll-mt-4 border-t border-border pt-4"
     >
+      <div className="flex items-baseline gap-4">
+        <h4 id="compare-title" className="text-body font-medium text-fg">
+          Retrieval: v1 keyword vs v2 RAG
+        </h4>
+        <Button variant="ghost" size="sm" className="ml-auto" onClick={onClose}>
+          Close
+        </Button>
+      </div>
       {q.isPending ? (
-        <div className="grid grid-cols-2 gap-4 py-1">
+        <div className="mt-3 grid grid-cols-2 gap-6">
           {[0, 1].map((i) => (
             <div key={i} className="flex flex-col gap-2">
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-3 w-1/3" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-2.5 w-1/3" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
           ))}
         </div>
       ) : conflict ? (
-        <div className="rounded-md border border-dashed border-border-strong px-4 py-6 text-center" role="status">
-          <div className="text-sm font-medium">Nothing to compare for this referral</div>
-          <div className="mx-auto mt-1 max-w-sm text-xs text-fg-muted">{q.error instanceof Error ? q.error.message : ""}</div>
-        </div>
+        <p className="mt-1 text-body text-fg-muted" role="status">
+          Nothing to compare for this referral. {q.error instanceof Error ? q.error.message : ""}
+        </p>
       ) : q.isError ? (
-        <ErrorState error={q.error} onRetry={() => void q.refetch()} />
+        <ErrorState error={q.error} title="Couldn't run the comparison" align="start" className="py-4" onRetry={() => void q.refetch()} />
       ) : (
         <CompareBody data={q.data} />
       )}
-    </Section>
+    </section>
   );
 }
 
@@ -67,89 +69,67 @@ function CompareBody({ data }: { data: RetrievalCompare }) {
   const { query, expected_source: expected } = data;
   return (
     <>
-      <dl className="mb-3 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
-        {query.indication && (
-          <>
-            <dt className="text-xs text-fg-muted">Indication</dt>
-            <dd className="min-w-0 truncate" title={query.indication}>
-              {query.indication}
-            </dd>
-          </>
+      <p className="mt-1 text-body text-fg-muted">The same query through both retrievers, top {Math.max(data.v1.chunks.length, data.v2.chunks.length)} chunks each.</p>
+      <p className="mt-1 flex min-w-0 items-baseline gap-2 text-body text-fg-muted">
+        <span className="shrink-0">Expected policy</span>
+        {expected ? (
+          <Code className="min-w-0 truncate text-fg">{expected}</Code>
+        ) : (
+          <span>none: no policy matches this payor and CPT</span>
         )}
-        {!!query.codes?.length && (
-          <>
-            <dt className="text-xs text-fg-muted">Codes</dt>
-            <dd className="flex flex-wrap gap-x-2">
-              {query.codes.map((c) => (
-                <Code key={c}>{c}</Code>
-              ))}
-            </dd>
-          </>
-        )}
-        {query.payor && (
-          <>
-            <dt className="text-xs text-fg-muted">Payor</dt>
-            <dd>{query.payor}</dd>
-          </>
-        )}
-        <dt className="text-xs text-fg-muted">Expected policy</dt>
-        <dd>{expected ? <Code>{expected}</Code> : <span className="text-fg-muted">None: no policy matches this payor and CPT</span>}</dd>
-      </dl>
-      <div className="grid grid-cols-2 divide-x divide-border border-t border-border">
-        <RetrieverColumn run={data.v1} expected={expected} className="pr-3" />
-        <RetrieverColumn run={data.v2} expected={expected} className="pl-3" />
+      </p>
+      {(query.indication || !!query.codes?.length) && (
+        <p className="mt-1 min-w-0 truncate text-meta text-fg-faint" title={query.indication}>
+          Query: {query.codes?.join(", ")}
+          {query.codes?.length && query.indication ? " · " : ""}
+          {query.indication}
+        </p>
+      )}
+      <div className="mt-3 grid grid-cols-2 gap-6">
+        <RetrieverColumn run={data.v1} expected={expected} />
+        <RetrieverColumn run={data.v2} expected={expected} />
       </div>
-      <p className="mt-2 text-xs text-fg-faint">Scores are on each retriever's own scale and are not comparable across columns.</p>
+      <p className="mt-3 text-meta text-fg-faint">Scores are on each retriever's own scale, so compare ranks, not scores.</p>
     </>
   );
 }
 
-function RetrieverColumn({ run, expected, className }: { run: RetrieverRun; expected: string | null; className?: string }) {
+function RetrieverColumn({ run, expected }: { run: RetrieverRun; expected: string | null }) {
   const top = run.chunks[0];
   const hit = expected && top ? top.source === expected : null;
   return (
-    <div className={cn("min-w-0 pt-2", className)} data-retriever={run.name}>
-      <div className="flex items-center gap-2">
-        <h3 className="truncate text-sm font-semibold">{run.name}</h3>
-        {hit != null &&
-          (hit ? (
-            <Badge tone="ok">Top hit expected</Badge>
-          ) : (
-            <Badge tone="bad">Top hit missed</Badge>
-          ))}
-      </div>
-      <div className="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-fg-muted">
-        <Code className="truncate">{run.impl}</Code>
+    <div className="min-w-0" data-retriever={run.name}>
+      <h5 className="truncate text-body font-medium text-fg">{run.name}</h5>
+      <div className="flex min-w-0 items-baseline gap-2 text-meta text-fg-muted">
+        <Code className="min-w-0 truncate">{run.impl}</Code>
         <span className="shrink-0 tabular-nums">{fmtMs(run.latency_ms)}</span>
       </div>
-      {run.keywords.length > 0 && (
-        <div className="mt-1.5 flex flex-wrap gap-1" aria-label={`${run.name} keywords`}>
-          {run.keywords.map((k) => (
-            <Badge key={k} tone="outline">
-              {k}
-            </Badge>
-          ))}
-        </div>
+      {hit != null && (
+        <p className={cn("mt-1 flex items-center gap-2 text-meta", hit ? "text-fg" : "text-bad")}>
+          <StatusDot tone={hit ? "ok" : "bad"} />
+          {hit ? "Top hit is the right policy" : "Top hit is the wrong policy"}
+        </p>
       )}
+      {run.keywords.length > 0 && <p className="mt-1 text-meta text-fg-faint wrap-anywhere">Keywords: {run.keywords.join(", ")}</p>}
       {run.chunks.length === 0 ? (
-        <p className="mt-2 text-sm text-fg-muted">No chunks returned.</p>
+        <p className="mt-2 text-body text-fg-muted">No chunks returned.</p>
       ) : (
-        <ol className="mt-1 flex flex-col divide-y divide-border">
+        <ol className="mt-2 flex flex-col divide-y divide-border border-t border-border">
           {run.chunks.map((c) => {
             const isExpected = !!expected && c.source === expected;
             return (
               <li key={`${c.rank}-${c.source}`} className="py-2">
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="text-fg-faint tabular-nums">#{c.rank}</span>
+                <div className="flex items-center gap-3 text-meta text-fg-muted tabular-nums">
+                  <span className="text-fg-faint">#{c.rank}</span>
+                  <span>score {c.score.toFixed(3)}</span>
                   {isExpected && (
-                    <span className="inline-flex items-center gap-0.5 text-ok">
-                      <Check className="size-3" aria-hidden />
+                    <span className="ml-auto inline-flex items-center gap-1.5">
+                      <StatusDot tone="ok" />
                       expected
                     </span>
                   )}
-                  <span className="ml-auto text-fg-muted tabular-nums">score {c.score.toFixed(3)}</span>
                 </div>
-                <Code className="block truncate" title={c.source}>
+                <Code className={cn("block truncate", isExpected ? "text-fg" : "text-fg-muted")} title={c.source}>
                   {c.source}
                 </Code>
                 <Excerpt text={c.text} lines={2} />

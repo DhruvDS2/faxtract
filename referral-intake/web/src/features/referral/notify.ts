@@ -1,10 +1,9 @@
 import { toast } from "@/components/ui/sonner";
 
 /**
- * Toasts for the detail screen. The shared Toaster sits bottom-right, exactly over the
- * sticky actions bar (Approve / Save), and sonner pauses a toast while it is hovered,
- * so detail toasts go bottom-left (over the sidebar footer and the fax margin), where
- * they never cover a review action, a validation message or the fields being edited.
+ * Toasts for the detail screen go bottom-left, over the fax's margin: bottom-right
+ * would sit on the fields and panels being worked on. The shared Toaster starts a
+ * bottom-left toast right of the nav, so it never covers the nav either.
  */
 type Options = NonNullable<Parameters<typeof toast>[1]>;
 const at = (o?: Options): Options => ({ position: "bottom-left", ...o });

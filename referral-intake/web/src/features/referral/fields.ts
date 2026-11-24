@@ -4,7 +4,14 @@ import { humanize } from "@/lib/format";
 export type FieldKind = "text" | "longtext" | "date" | "code" | "codes" | "select";
 export type Option = { value: string; label: string };
 
-export type FieldMeta = { label: string; kind: FieldKind; options?: Option[]; placeholder?: string };
+export type FieldMeta = {
+  label: string;
+  kind: FieldKind;
+  options?: Option[];
+  placeholder?: string;
+  /** What a value must look like before it can be sent; a 422 flips to "corrected" once it does. */
+  pattern?: RegExp;
+};
 
 const SEX: Option[] = [
   { value: "F", label: "Female" },
@@ -31,7 +38,7 @@ const META: Partial<Record<ReferralField, FieldMeta>> = {
   patient_phone: { label: "Phone", kind: "text" },
   patient_address: { label: "Address", kind: "text" },
   requested_study: { label: "Requested study", kind: "text" },
-  cpt_code: { label: "CPT", kind: "code", placeholder: "e.g. 72148" },
+  cpt_code: { label: "CPT", kind: "code", placeholder: "e.g. 72148", pattern: /^\d{4}[0-9A-Z]$/i },
   laterality: { label: "Laterality", kind: "select", options: LATERALITY },
   icd10_codes: { label: "ICD-10", kind: "codes", placeholder: "Comma-separated, e.g. M54.16, M51.26" },
   clinical_indication: { label: "Clinical indication", kind: "longtext" },
@@ -41,18 +48,20 @@ const META: Partial<Record<ReferralField, FieldMeta>> = {
   member_id: { label: "Member ID", kind: "code" },
   group_id: { label: "Group ID", kind: "code" },
   referring_provider_name: { label: "Provider", kind: "text" },
-  referring_provider_npi: { label: "NPI", kind: "code", placeholder: "10 digits" },
+  referring_provider_npi: { label: "NPI", kind: "code", placeholder: "10 digits", pattern: /^\d{10}$/ },
   referring_practice: { label: "Practice", kind: "text" },
 };
 
 export const fieldMeta = (f: string): FieldMeta =>
   META[f as ReferralField] ?? { label: humanize(f).replace(/^./, (c) => c.toUpperCase()), kind: "text" };
 
+export const isField = (f: string): f is ReferralField => (EDITABLE_FIELDS as string[]).includes(f);
+
 const GROUPS: { title: string; fields: ReferralField[] }[] = [
   { title: "Patient", fields: ["patient_last_name", "patient_first_name", "patient_dob", "patient_sex", "patient_phone", "patient_address"] },
   { title: "Study", fields: ["requested_study", "cpt_code", "laterality", "icd10_codes", "clinical_indication", "urgency", "order_date"] },
   { title: "Coverage", fields: ["payor_name", "member_id", "group_id"] },
-  { title: "Referring provider", fields: ["referring_provider_name", "referring_provider_npi", "referring_practice"] },
+  { title: "Referring", fields: ["referring_provider_name", "referring_provider_npi", "referring_practice"] },
 ];
 
 /** Every EDITABLE_FIELDS entry, grouped; anything new in the contract lands in "Other". */
@@ -82,6 +91,36 @@ export function fromDraft(field: string, value: string): unknown {
   return v === "" ? null : v;
 }
 
+const ICD10 = /^[A-Z]\d[0-9A-Z](\.[0-9A-Z]{1,4})?$/i;
+
+function isCalendarDate(v: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  if (!m) return false;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+}
+
+/**
+ * Does a draft value look right for its field? Used only to flip a field the server
+ * rejected (422) into its "corrected" state as you type; the server re-validates on save.
+ */
+export function parses(field: string, value: string): boolean {
+  const meta = fieldMeta(field);
+  const v = value.trim();
+  if (!v) return false;
+  switch (meta.kind) {
+    case "date":
+      return isCalendarDate(v);
+    case "select":
+      return !!meta.options?.some((o) => o.value === v);
+    case "codes":
+      return v.split(/[\s,;]+/).filter(Boolean).every((c) => ICD10.test(c));
+    default:
+      return meta.pattern ? meta.pattern.test(v) : true;
+  }
+}
+
 /** Display text for a field value in read mode. */
 export function displayValue(field: string, value: unknown): string | null {
   if (value == null || value === "") return null;
@@ -94,4 +133,5 @@ export function displayValue(field: string, value: unknown): string | null {
 export const flagsFor = (flags: Flag[], field: string) =>
   flags.filter((f) => f.field === field || f.field.startsWith(field + "[") || f.field.startsWith(field + "."));
 
-export const isFieldFlag = (flag: Flag) => FIELD_ORDER.some((f) => flagsFor([flag], f).length > 0);
+/** The field a flag belongs to, if any. */
+export const flagField = (flag: Flag): ReferralField | null => FIELD_ORDER.find((f) => flagsFor([flag], f).length > 0) ?? null;

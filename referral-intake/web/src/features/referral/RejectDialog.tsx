@@ -14,7 +14,7 @@ type Props = {
   onReject: (reason: string) => Promise<string | null>;
 };
 
-/** Reject needs a reason (the API returns 422 without one). */
+/** Reject needs a reason (the API answers 422 without one). */
 export function RejectDialog({ open, onOpenChange, patient, pending, onReject }: Props) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -45,18 +45,19 @@ export function RejectDialog({ open, onOpenChange, patient, pending, onReject }:
     <Dialog open={open} onOpenChange={change}>
       <DialogContent>
         <form
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             void submit();
           }}
         >
           <DialogHeader>
-            <DialogTitle>Reject referral</DialogTitle>
+            <DialogTitle>Reject this referral?</DialogTitle>
             <DialogDescription>
-              {patient} leaves the queue and no order is sent to the RIS. The reason is stored with the review.
+              {patient} leaves the review queue and no order goes to the RIS. The reason is saved with the review, for the referring office.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="reject-reason">Reason</Label>
             <Textarea
               id="reject-reason"
@@ -64,7 +65,7 @@ export function RejectDialog({ open, onOpenChange, patient, pending, onReject }:
               required
               rows={3}
               value={reason}
-              placeholder="e.g. Coverage terminated; patient to bring a new insurance card"
+              placeholder="e.g. Coverage terminated. Ask the office for the patient's current insurance."
               aria-invalid={!!error || showRequired || undefined}
               aria-describedby={describedBy}
               onChange={(e) => {
@@ -79,21 +80,22 @@ export function RejectDialog({ open, onOpenChange, patient, pending, onReject }:
               }}
             />
             {error || showRequired ? (
-              <p id="reject-reason-error" className="text-xs text-bad" role="alert">
-                {error ?? "A reason is required."}
+              <p id="reject-reason-error" className="text-meta text-bad" role="alert">
+                {error ?? "Add a reason to reject."}
               </p>
             ) : (
-              <p id="reject-reason-hint" className="text-xs text-fg-muted">
-                Required. <Kbd>{MOD_KEY}</Kbd> <Kbd>↵</Kbd> to reject.
+              <p id="reject-reason-hint" className="flex items-center gap-1 text-meta text-fg-muted">
+                Required. <Kbd>{MOD_KEY}</Kbd>
+                <Kbd>↵</Kbd> rejects.
               </p>
             )}
           </div>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => change(false)}>
-              Cancel
+              Keep it
             </Button>
-            <Button type="submit" variant="danger" data-testid="btn-reject-confirm" disabled={empty || pending}>
-              {pending ? "Rejecting…" : "Reject referral"}
+            <Button type="submit" variant="danger" data-testid="btn-reject-confirm" disabled={empty} loading={pending} loadingText="Rejecting…">
+              Reject referral
             </Button>
           </DialogFooter>
         </form>
