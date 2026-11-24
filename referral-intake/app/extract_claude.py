@@ -1,17 +1,16 @@
-"""Field extraction via Claude vision.
+"""Claude vision extraction -- the one engine that calls a model.
 
-The original engine: page images go to the model, which returns the fields plus
-a self-reported confidence score per field. Kept alongside the Textract engine
-so the eval harness can run both against the same ground truth.
+Every page image goes to Claude with the prompt below; it answers with the
+fields and its own confidence for each. Values come back without coordinates,
+so app/locate.py finds them on the page afterwards for the review highlight.
 """
-import json
-import os
 from pathlib import Path
+import json
 
 import anthropic
 
-from app.extract import image_to_b64, pdf_to_images
 from app.models import Referral
+from app.extract import image_to_b64, pdf_to_images
 
 MODEL = "claude-sonnet-4-6"
 
@@ -102,21 +101,14 @@ def extract(pdf_path) -> tuple[Referral, dict]:
     data = json.loads(_strip_fences(raw))
     referral = _to_referral(data)
 
-    # Claude returns values but no coordinates. Locate each value on the page so
-    # the UI can highlight the source region on hover. HIGHLIGHT picks how:
-    #   tesseract (default) -- free local OCR, string-matches values to word boxes
-    #   textract            -- AWS Textract Queries returns a box per field directly
-    #                          (better, but costs an AWS call per fax)
+    # Claude gives values, not coordinates: find each one in a local Tesseract
+    # pass so the review UI can highlight it. Best-effort -- a value that cannot
+    # be found just has no box; extraction never fails over it.
     try:
         from app.locate import locate_boxes
-        if os.getenv("HIGHLIGHT", "tesseract").lower() == "textract":
-            # locate CLAUDE's values against TEXTRACT's OCR word geometry
-            from app.extract_textract import word_pages
-            locate_boxes(pdf_path, referral, pages=word_pages(pdf_path))
-        else:
-            locate_boxes(pdf_path, referral)  # Tesseract word geometry
+        locate_boxes(pdf_path, referral)
     except Exception:
-        pass  # highlighting is best-effort; never fail extraction over it
+        pass
 
     usage = {"input_tokens": response.usage.input_tokens,
              "output_tokens": response.usage.output_tokens}

@@ -1,72 +1,36 @@
-import type { Flag } from "../api";
+export const fmtConfidence = (v: number | null | undefined) => (v == null ? "-" : v.toFixed(2));
 
-export const THRESHOLD = 0.85;
-
-/** Below this the extraction is treated as unverified and gets the amber path. */
-export const isLow = (confidence?: number) =>
-  confidence !== undefined && confidence < THRESHOLD;
-
-export const minConfidence = (confidence: Record<string, number> = {}) => {
-  const values = Object.values(confidence);
-  return values.length ? Math.min(...values) : 1;
+export const fmtMs = (ms: number | null | undefined) => {
+  if (ms == null) return "-";
+  if (ms < 1) return `${ms.toFixed(2)} ms`;
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  return `${(ms / 1000).toFixed(ms < 10_000 ? 2 : 1)} s`;
 };
 
-export const patientName = (r: Record<string, any>) => {
-  const last = r.patient_last_name?.trim();
-  const first = r.patient_first_name?.trim();
-  if (last && first) return `${last}, ${first}`;
-  return last || first || "Unnamed patient";
+export const fmtUsd = (v: number | null | undefined, digits = 4) => (v == null ? "-" : `$${v.toFixed(digits)}`);
+
+export const fmtPct = (num: number, den: number) => (den ? `${((num / den) * 100).toFixed(1)}%` : "-");
+
+export const fmtDateTime = (iso: string | null | undefined) => {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export const ELIGIBILITY_LABELS: Record<string, string> = {
-  active_in_network: "Active · in network",
-  active_out_of_network: "Active · out of network",
-  terminated: "Terminated",
-  not_found: "Not found",
+export const fmtAge = (iso: string | null | undefined, now = Date.now()) => {
+  if (!iso) return "-";
+  const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
 };
 
-export const STATUS_LABELS: Record<string, string> = {
-  needs_review: "Needs review",
-  auto_approved: "Auto-approved",
-  approved: "Approved",
-  rejected: "Rejected",
-  sent_to_ris: "Sent to RIS",
-};
+export const humanize = (field: string) => field.replace(/_/g, " ").replace(/^patient /, "").replace(/\bnpi\b/i, "NPI").replace(/\bcpt\b/i, "CPT").replace(/\bicd10\b/i, "ICD-10");
 
-export const formatMs = (ms: number) =>
-  ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms)}ms`;
+/** X12 (270/271): segments end with "~"; show one per line. Not for HL7 -- its MSH encoding characters contain "~". */
+export const segments = (msg: string | null | undefined) => (msg ?? "").split(/\r\n|\r|\n|~/).filter(Boolean);
 
-/** Sonnet-class vision pricing, matching the per-referral figure in the README. */
-const IN_PER_TOKEN = 3 / 1_000_000;
-const OUT_PER_TOKEN = 15 / 1_000_000;
-export const estimateCost = (usage: Record<string, number> = {}) => {
-  const input = usage.input_tokens ?? usage.input ?? 0;
-  const output = usage.output_tokens ?? usage.output ?? 0;
-  if (!input && !output) return null;
-  return input * IN_PER_TOKEN + output * OUT_PER_TOKEN;
-};
-
-/**
- * Saving a correction sets that field's confidence to 1.0, which retires the
- * "low extraction confidence" warning the extractor raised. Validation flags
- * are deliberately left in place: the API does not re-run validation on PATCH,
- * so we cannot claim a bad NPI or member ID has been fixed just because the
- * text changed.
- */
-const isRetired = (flag: Flag, confidence: Record<string, number>) =>
-  flag.severity === "warning" &&
-  flag.message.startsWith("low extraction confidence") &&
-  confidence[flag.field] === 1;
-
-export const liveFlags = (flags: Flag[], confidence: Record<string, number> = {}) =>
-  flags.filter((f) => !isRetired(f, confidence));
-
-/**
- * Confidence warnings are already carried by the amber percentage and edge on
- * the field itself, so repeating them as prose is pure duplication. These are
- * the flags that say something the UI is not already showing.
- */
-export const validationFlags = (flags: Flag[], confidence: Record<string, number> = {}) =>
-  liveFlags(flags, confidence).filter(
-    (f) => !f.message.startsWith("low extraction confidence"),
-  );
+/** HL7 v2: segments are separated by \r. */
+export const hl7Segments = (msg: string | null | undefined) => (msg ?? "").split(/\r\n|\r|\n/).filter(Boolean);

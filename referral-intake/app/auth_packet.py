@@ -1,10 +1,8 @@
 from pathlib import Path
 
 from app.models import AuthRequirement, Referral
-from app.policy import retrieve
 from app.validate import ICD10, PAYORS, STUDIES, match_payor
 
-OUT = Path(__file__).parent.parent / "packets"
 
 
 def auth_requirement(referral: Referral) -> AuthRequirement:
@@ -102,17 +100,3 @@ def build_packet(referral: Referral, eligibility, policy_citations, out_path) ->
 
     SimpleDocTemplate(str(out_path), pagesize=letter, title="Prior Authorization Request").build(story)
     return str(out_path)
-
-
-def generate_packet(referral: Referral, eligibility):
-    req = auth_requirement(referral)
-    if req.required and req.missing_elements:
-        reason = (f"{referral.payor_name} requires {', '.join(req.missing_elements)}; "
-                  "not present in referral")
-        return None, reason
-
-    citations = retrieve(referral.payor_name, referral.cpt_code, referral.icd10_codes)
-    OUT.mkdir(exist_ok=True)
-    out_path = OUT / f"auth_{referral.member_id or 'unknown'}.pdf"
-    build_packet(referral, eligibility, citations, out_path)
-    return str(out_path), None

@@ -1,3 +1,8 @@
+"""v1 baseline: the original linear pipeline (extract -> validate -> 270/271 -> auth rules).
+
+Kept unchanged as the benchmark baseline. The served pipeline is v2, graph/.
+PIPELINE=v1 serves this one through app/runner_v1.py.
+"""
 import time
 import uuid
 

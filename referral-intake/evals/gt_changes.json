@@ -1,0 +1,824 @@
+{
+  "generated_at": "2026-11-24T01:24:35+00:00",
+  "generator": "corpus/generate_faxes.py",
+  "seed": 42,
+  "count": 60,
+  "before": {
+    "truth": "evals/extraction_eval.json per-field truth (= ground_truth.json at the pre-fix generator, commit 3914b53)",
+    "pages": "evals/gt_prefix_fingerprint.json"
+  },
+  "after": {
+    "truth": "corpus/out/ground_truth.json from the generator at this commit",
+    "ground_truth_sha256": "83c50f952e19db6ffa47e535678b753cd9afcd5863b32841a990da5e9be135e3"
+  },
+  "pixel_check": "page pixels compared with the pre-fix fingerprint",
+  "summary": {
+    "files": 60,
+    "files_changed": 45,
+    "files_unchanged": 15,
+    "pages_reprinted": 10,
+    "values_changed_by_field": {
+      "patient_address": 40,
+      "laterality": 10
+    }
+  },
+  "rules": {
+    "laterality": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)",
+    "patient_address": "the template does not print the address, so the truth is null (only template_a prints it)"
+  },
+  "boxes": "every file's boxes were re-recorded by the new box implementation (tagged values, label map warped with the page); boxes are not a truth value and are not listed here",
+  "changes": [
+    {
+      "file": "referral_001.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "8090 Old Mill Rd, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        },
+        {
+          "field": "laterality",
+          "old": "left",
+          "new": "right",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_002.pdf",
+      "template": "template_c",
+      "degradation": "hard",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "8128 Bramble Ct, Allentown, PA 18101",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_004.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "2987 Fenwick St, Danbury, CT 06810",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        },
+        {
+          "field": "laterality",
+          "old": "left",
+          "new": "right",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_005.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "2536 Selby Ln, Yonkers, NY 10701",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_007.pdf",
+      "template": "template_b",
+      "degradation": "hard",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "7414 Larkspur Ave, Paterson, NJ 07501",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_008.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "4837 Selby Ln, Yonkers, NY 10701",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_010.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "5510 Corbin Way, Danbury, CT 06810",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_011.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "4320 Bramble Ct, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_013.pdf",
+      "template": "template_b",
+      "degradation": "moderate",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "1092 Larkspur Ave, Yonkers, NY 10701",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_014.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6559 Corbin Way, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_016.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6736 Larkspur Ave, Paterson, NJ 07501",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_017.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "4893 Harlow Dr, Danbury, CT 06810",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        },
+        {
+          "field": "laterality",
+          "old": "n/a",
+          "new": "bilateral",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_019.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6459 Bramble Ct, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_020.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "2176 Old Mill Rd, Paterson, NJ 07501",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_022.pdf",
+      "template": "template_b",
+      "degradation": "hard",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6937 Harlow Dr, Paterson, NJ 07501",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_023.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "5510 Harlow Dr, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_025.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "2987 Fenwick St, Danbury, CT 06810",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_026.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "4949 Bramble Ct, Allentown, PA 18101",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_027.pdf",
+      "template": "template_a",
+      "degradation": "moderate",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "laterality",
+          "old": "n/a",
+          "new": "bilateral",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_028.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "5139 Corbin Way, Danbury, CT 06810",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_029.pdf",
+      "template": "template_c",
+      "degradation": "moderate",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "7414 Larkspur Ave, Paterson, NJ 07501",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_030.pdf",
+      "template": "template_a",
+      "degradation": "clean",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "laterality",
+          "old": "left",
+          "new": "right",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_031.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "2947 Selby Ln, Danbury, CT 06810",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_032.pdf",
+      "template": "template_c",
+      "degradation": "moderate",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6844 Selby Ln, Rochester, NY 14604",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_034.pdf",
+      "template": "template_b",
+      "degradation": "moderate",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6736 Larkspur Ave, Paterson, NJ 07501",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_035.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "1733 Pinegrove Ter, Allentown, PA 18101",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_036.pdf",
+      "template": "template_a",
+      "degradation": "clean",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "laterality",
+          "old": "n/a",
+          "new": "bilateral",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_037.pdf",
+      "template": "template_b",
+      "degradation": "moderate",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "1639 Corbin Way, Rochester, NY 14604",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_038.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "8128 Bramble Ct, Allentown, PA 18101",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_039.pdf",
+      "template": "template_a",
+      "degradation": "moderate",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "laterality",
+          "old": "n/a",
+          "new": "bilateral",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_040.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "961 Corbin Way, Allentown, PA 18101",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        },
+        {
+          "field": "laterality",
+          "old": "n/a",
+          "new": "bilateral",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_041.pdf",
+      "template": "template_c",
+      "degradation": "moderate",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6891 Fenwick St, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_043.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "7312 Fenwick St, Allentown, PA 18101",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_044.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6459 Bramble Ct, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_046.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "3611 Pinegrove Ter, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_047.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "8447 Old Mill Rd, Rochester, NY 14604",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_049.pdf",
+      "template": "template_b",
+      "degradation": "moderate",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "8304 Larkspur Ave, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_050.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "4515 Selby Ln, Rochester, NY 14604",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_052.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "1324 Fenwick St, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_053.pdf",
+      "template": "template_c",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "2987 Fenwick St, Danbury, CT 06810",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_055.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6911 Corbin Way, Rochester, NY 14604",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_056.pdf",
+      "template": "template_c",
+      "degradation": "moderate",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "3375 Fenwick St, Stamford, CT 06901",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    },
+    {
+      "file": "referral_057.pdf",
+      "template": "template_a",
+      "degradation": "clean",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "laterality",
+          "old": "left",
+          "new": "right",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_058.pdf",
+      "template": "template_b",
+      "degradation": "clean",
+      "printed_changed": true,
+      "replay_stale_fields": [
+        "laterality"
+      ],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "2484 Larkspur Ave, Danbury, CT 06810",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        },
+        {
+          "field": "laterality",
+          "old": "n/a",
+          "new": "bilateral",
+          "printed": true,
+          "rule": "laterality must agree with the study text and the ICD-10 codes (mammography CPT 77066 is 'bilateral'; knee/upper-extremity studies take the side their right-sided codes name)"
+        }
+      ]
+    },
+    {
+      "file": "referral_059.pdf",
+      "template": "template_c",
+      "degradation": "moderate",
+      "printed_changed": false,
+      "replay_stale_fields": [],
+      "fields": [
+        {
+          "field": "patient_address",
+          "old": "6231 Larkspur Ave, Allentown, PA 18101",
+          "new": null,
+          "printed": false,
+          "rule": "the template does not print the address, so the truth is null (only template_a prints it)"
+        }
+      ]
+    }
+  ],
+  "unchanged_files": [
+    "referral_000.pdf",
+    "referral_003.pdf",
+    "referral_006.pdf",
+    "referral_009.pdf",
+    "referral_012.pdf",
+    "referral_015.pdf",
+    "referral_018.pdf",
+    "referral_021.pdf",
+    "referral_024.pdf",
+    "referral_033.pdf",
+    "referral_042.pdf",
+    "referral_045.pdf",
+    "referral_048.pdf",
+    "referral_051.pdf",
+    "referral_054.pdf"
+  ]
+}

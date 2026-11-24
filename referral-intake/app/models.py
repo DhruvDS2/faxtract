@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -9,12 +9,9 @@ Severity = Literal["error", "warning"]
 
 
 class Box(BaseModel):
-    """A region of a page, normalized to 0-1 against that page's dimensions.
-
-    Textract returns geometry this way, which means the same numbers overlay
-    correctly on any rendering of the page regardless of DPI or zoom. The
-    review UI turns them straight into CSS percentages.
-    """
+    """Where a value sits on a page, as fractions (0-1) of that page's width and
+    height measured from its top-left corner -- so it overlays any rendering of
+    the page at any zoom."""
     page: int = 0
     left: float
     top: float
@@ -43,7 +40,7 @@ class Referral(BaseModel):
     group_id: str | None = None
     order_date: date | None = None
     confidence: dict[str, float] = Field(default_factory=dict)
-    boxes: dict[str, list[Box]] = Field(default_factory=dict)
+    boxes: dict[str, list[Box]] = Field(default_factory=dict)  # field -> where it was read
 
 
 class Flag(BaseModel):
@@ -77,7 +74,7 @@ class ProcessedReferral(BaseModel):
     auth: AuthRequirement | None = None
     auth_packet_path: str | None = None
     status: Literal["needs_review", "auto_approved", "approved", "rejected", "sent_to_ris"] = "needs_review"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     stage_timings_ms: dict[str, float] = Field(default_factory=dict)
     token_usage: dict[str, int] = Field(default_factory=dict)
 
@@ -88,4 +85,4 @@ class Correction(BaseModel):
     original_value: str | None
     corrected_value: str | None
     original_confidence: float | None
-    corrected_at: datetime = Field(default_factory=datetime.utcnow)
+    corrected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

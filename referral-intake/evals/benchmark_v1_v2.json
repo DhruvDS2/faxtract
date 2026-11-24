@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-24T01:44:11.147964Z",
+  "git_commit": "bd372b2d67c4f86f78363194d41085b545c2b4c6",
+  "threshold": 0.85,
+  "corpus": {
+    "n": 60,
+    "seed": 42,
+    "source": "corpus/out (corpus/generate_faxes.py --seed 42 --count 60)",
+    "ground_truth_sha256": "83c50f952e19db6ffa47e535678b753cd9afcd5863b32841a990da5e9be135e3",
+    "truth_version": "as_printed",
+    "truth_policy": "post-fix ground truth (corpus/generate_faxes.py at this commit), except that on the 10 pages whose print the fix changed (evals/gt_changes.json, printed=true) the changed fields keep the value the pre-fix page printed, because the replayed prediction was read off that page. Retrieval's expected doc uses the post-fix payor + CPT (unchanged by the fix).",
+    "reprinted_pages": {
+      "referral_001.pdf": [
+        "laterality"
+      ],
+      "referral_004.pdf": [
+        "laterality"
+      ],
+      "referral_017.pdf": [
+        "laterality"
+      ],
+      "referral_027.pdf": [
+        "laterality"
+      ],
+      "referral_030.pdf": [
+        "laterality"
+      ],
+      "referral_036.pdf": [
+        "laterality"
+      ],
+      "referral_039.pdf": [
+        "laterality"
+      ],
+      "referral_040.pdf": [
+        "laterality"
+      ],
+      "referral_057.pdf": [
+        "laterality"
+      ],
+      "referral_058.pdf": [
+        "laterality"
+      ]
+    },
+    "false_approvals_by_truth_version": {
+      "as_printed": {
+        "v1": {
+          "false_approvals": 1,
+          "files": [
+            "referral_040.pdf"
+          ]
+        },
+        "graph": {
+          "false_approvals": 1,
+          "files": [
+            "referral_040.pdf"
+          ]
+        }
+      },
+      "pre_fix": {
+        "v1": {
+          "false_approvals": 1,
+          "files": [
+            "referral_040.pdf"
+          ]
+        },
+        "graph": {
+          "false_approvals": 1,
+          "files": [
+            "referral_040.pdf"
+          ]
+        }
+      },
+      "post_fix": {
+        "v1": {
+          "false_approvals": 4,
+          "files": [
+            "referral_017.pdf",
+            "referral_027.pdf",
+            "referral_036.pdf",
+            "referral_039.pdf"
+          ]
+        },
+        "graph": {
+          "false_approvals": 4,
+          "files": [
+            "referral_017.pdf",
+            "referral_027.pdf",
+            "referral_036.pdf",
+            "referral_039.pdf"
+          ]
+        }
+      }
+    },
+    "gt_changes": "evals/gt_changes.json"
+  },
+  "extraction": {
+    "engine": "replay",
+    "source": "evals/extraction_eval.json",
+    "model": "not recorded in the artifact; app/extract_claude.py MODEL = claude-sonnet-4-6",
+    "n_files": 60,
+    "recorded_cost_total_usd": 0.8724,
+    "note": "Replay hands back what Claude vision actually returned per fax (values + self-reported confidence), so both pipelines run on identical, genuine model output. Measured latencies therefore exclude model time; the recorded model latency is extraction_latency_ms."
+  },
+  "critical_fields": [
+    "patient_first_name",
+    "patient_last_name",
+    "patient_dob",
+    "cpt_code",
+    "laterality",
+    "icd10_codes",
+    "member_id",
+    "payor_name"
+  ],
+  "v1": {
+    "pipeline": "v1",
+    "retriever": "app.policy.retrieve (keyword overlap, whole documents)",
+    "retrieval_hit_at_1_with_cpt": {
+      "hits": 57,
+      "n": 60
+    },
+    "retrieval_hit_at_1_without_cpt": {
+      "hits": 48,
+      "n": 60
+    },
+    "auto_approved": 19,
+    "false_approvals": 1,
+    "false_approval_files": [
+      "referral_040.pdf"
+    ],
+    "latency_ms": {
+      "p50": 0.43,
+      "p95": 4.091,
+      "mean": 1.444,
+      "n": 60
+    },
+    "extraction_latency_ms": {
+      "p50": 10324.65,
+      "p95": 12757.46,
+      "mean": 10624.833,
+      "n": 60
+    },
+    "cost_per_referral_usd": 0.01454,
+    "node_timings_ms": {
+      "extract": {
+        "p50": 0.095,
+        "p95": 0.181,
+        "mean": 0.108,
+        "n": 60
+      },
+      "validate": {
+        "p50": 0.045,
+        "p95": 0.203,
+        "mean": 0.073,
+        "n": 60
+      },
+      "eligibility": {
+        "p50": 0.076,
+        "p95": 0.237,
+        "mean": 0.102,
+        "n": 60
+      },
+      "send": {
+        "p50": 2.195,
+        "p95": 7.393,
+        "mean": 3.134,
+        "n": 19
+      }
+    }
+  },
+  "v2": {
+    "pipeline": "graph",
+    "retriever": "app.rag.retrieve_3step (3-step hybrid RAG on pgvector)",
+    "retrieval_hit_at_1_with_cpt": {
+      "hits": 60,
+      "n": 60
+    },
+    "retrieval_hit_at_1_without_cpt": {
+      "hits": 55,
+      "n": 60
+    },
+    "auto_approved": 19,
+    "false_approvals": 1,
+    "false_approval_files": [
+      "referral_040.pdf"
+    ],
+    "latency_ms": {
+      "p50": 56.753,
+      "p95": 122.212,
+      "mean": 68.065,
+      "n": 60
+    },
+    "extraction_latency_ms": {
+      "p50": 10324.65,
+      "p95": 12757.46,
+      "mean": 10624.833,
+      "n": 60
+    },
+    "cost_per_referral_usd": 0.01454,
+    "node_timings_ms": {
+      "extract": {
+        "p50": 0.115,
+        "p95": 0.169,
+        "mean": 0.124,
+        "n": 60
+      },
+      "validate": {
+        "p50": 0.075,
+        "p95": 0.148,
+        "mean": 0.093,
+        "n": 60
+      },
+      "eligibility": {
+        "p50": 0.17,
+        "p95": 0.366,
+        "mean": 0.196,
+        "n": 60
+      },
+      "auth": {
+        "p50": 0.056,
+        "p95": 0.146,
+        "mean": 0.07,
+        "n": 60
+      },
+      "retrieve": {
+        "p50": 26.431,
+        "p95": 56.83,
+        "mean": 43.658,
+        "n": 42
+      },
+      "packet": {
+        "p50": 6.147,
+        "p95": 8.631,
+        "mean": 6.7,
+        "n": 42
+      },
+      "human_review": {
+        "p50": 0.045,
+        "p95": 0.07,
+        "mean": 0.051,
+        "n": 41
+      },
+      "order": {
+        "p50": 1.747,
+        "p95": 3.713,
+        "mean": 1.993,
+        "n": 19
+      }
+    }
+  },
+  "false_approval_cases": [
+    {
+      "file": "referral_040.pdf",
+      "pipelines": [
+        "v1",
+        "graph"
+      ],
+      "field": "laterality",
+      "predicted": "bilateral",
+      "truth": "n/a",
+      "confidence": 0.99,
+      "explanation": "referral_040.pdf (template_b, clean scan): the model read laterality as 'bilateral' where the page shows 'n/a', with 0.99 confidence, above the 0.85 threshold. CPT 77066 (Diagnostic mammography bilateral) does not require a side, so validation accepts any value. Coverage came back active in network, and Cascade Mutual needs no prior auth for this study, so the gate auto-approved it (v1 and v2) and the ORM went to the RIS with laterality = 'bilateral'. The printed 'n/a' was itself a ground-truth generator defect: the old generator drew the side at random instead of taking it from the study (\"Diagnostic mammography bilateral\" cannot be n/a) or from the right-sided ICD-10 codes. The fixed generator prints 'bilateral', which is what the model answered, so this case is expected to disappear when the fixed corpus is re-extracted (NEEDS KEYS)."
+    }
+  ],
+  "notes": [
+    "Same gate in both pipelines (app.gate.review_reasons): they agree on 60/60 auto-approve decisions, so the comparison is orchestration and retrieval, not rules.",
+    "Orders really sent: v1 19 and v2 19 got MSA|AA from the in-process mock RIS (38 orders in its store).",
+    "Latency is end to end per referral with replayed extraction and no human time: v1 = process() + gate + MLLP send; v2 = GraphRunner.start() to its pause or end, including the Postgres checkpoint and trace writes, the 3-step RAG and the prior-auth packet PDF that v1 never does. One untimed warm-up run per pipeline first (model load, connection pool).",
+    "Where v2's time goes: the nodes' own work is p50 30.5 ms per referral; the rest (p50 27.6 ms, p95 55.5 ms) is LangGraph bookkeeping plus the Postgres checkpoint after every step and two trace rows per node, i.e. the price of pausable, resumable, inspectable runs. Next to the ~10 s model call it is noise.",
+    "Retrieval latency per query: v1 p50 1.9 ms / p95 4.7 ms, v2 p50 24.7 ms / p95 89.1 ms. Both retrievers get the same referral (the replayed prediction); the expected doc is section 15's payor+CPT policy (app.rag.expected_source).",
+    "Hit@1 misses: v1 with CPT ['referral_004.pdf', 'referral_009.pdf', 'referral_054.pdf'], v1 without CPT ['referral_001.pdf', 'referral_004.pdf', 'referral_009.pdf', 'referral_010.pdf', 'referral_013.pdf', 'referral_019.pdf', 'referral_023.pdf', 'referral_034.pdf', 'referral_041.pdf', 'referral_043.pdf', 'referral_054.pdf', 'referral_059.pdf']; v2 with CPT [], v2 without CPT ['referral_010.pdf', 'referral_023.pdf', 'referral_041.pdf', 'referral_049.pdf', 'referral_059.pdf'].",
+    "The served graph only retrieves when prior auth is required (42/60 referrals); its top citation matches the direct retrieve_3step call on 42/42.",
+    "The earlier '3 false approvals' claim used validate() alone, with pre-fix truth: that narrow gate auto-approves 59/60 and falsely approves 3 (referral_013.pdf, referral_040.pdf, referral_058.pdf). The full gate (validation + eligibility + prior-auth elements) auto-approves 19 and falsely approves 1 under the same pre-fix truth (referral_040.pdf). The others are held for coverage or prior-auth reasons, not because the gate noticed the wrong value.",
+    "False approvals by truth version (v1 / v2): as_printed 1 / 1; pre_fix 1 / 1; post_fix 4 / 4. post_fix scores the stale replays of reprinted pages against values those pages never showed, so it overstates errors; as_printed is the headline.",
+    "Cost per referral is the recorded Claude token usage x app.contracts.PRICE_PER_MTOK; v2 adds no model calls (its step-2 keyword extractor is deterministic), so both pipelines cost the same."
+  ]
+}
