@@ -438,17 +438,23 @@ def bootstrap(url: str) -> None:
 
 
 def corpus_ready() -> bool:
+    """60 faxes + truth exist and are newer than the generator and its fixtures."""
     truth = CORPUS / "ground_truth.json"
     try:
         names = json.loads(truth.read_text())
     except (OSError, ValueError):
         return False
-    return len(names) >= 60 and all((CORPUS / n).exists() for n in names)
+    if len(names) < 60 or not all((CORPUS / n).exists() for n in names):
+        return False
+    sources = [ROOT / "corpus" / "generate_faxes.py", ROOT / "corpus" / "build_fixtures.py",
+               *sorted((ROOT / "corpus" / "fixtures").glob("*.json"))]
+    newest = max((f.stat().st_mtime for f in sources if f.exists()), default=0)
+    return truth.stat().st_mtime >= newest
 
 
 def build_corpus() -> None:
     if corpus_ready():
-        say("    corpus/out already has the 60 faxes + ground_truth.json (skipped)")
+        say("    corpus/out already has the 60 faxes + ground_truth.json, newer than the generator (skipped)")
         return
     for cmd in ([sys.executable, "corpus/build_fixtures.py"],
                 [sys.executable, "corpus/generate_faxes.py", "--seed", "42", "--count", "60"]):

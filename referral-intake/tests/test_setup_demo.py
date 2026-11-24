@@ -87,7 +87,15 @@ def test_demo_dir_ignores_itself(demo_dirs):
 
 
 def test_corpus_ready(tmp_path, monkeypatch):
+    import os
+
     monkeypatch.setattr(demo, "CORPUS", tmp_path)
+    root = tmp_path / "root"
+    (root / "corpus" / "fixtures").mkdir(parents=True)
+    gen = root / "corpus" / "generate_faxes.py"
+    gen.write_text("# generator")
+    os.utime(gen, (1_000_000, 1_000_000))
+    monkeypatch.setattr(demo, "ROOT", root)
     assert not demo.corpus_ready()
     names = {f"referral_{i:03d}.pdf": {} for i in range(60)}
     (tmp_path / "ground_truth.json").write_text(json.dumps(names))
@@ -95,6 +103,8 @@ def test_corpus_ready(tmp_path, monkeypatch):
     for n in names:
         (tmp_path / n).write_bytes(b"%PDF")
     assert demo.corpus_ready()
+    gen.write_text("# generator, changed")  # newer than ground_truth.json -> regenerate
+    assert not demo.corpus_ready()
 
 
 def test_start_and_stop_a_service(demo_dirs):
