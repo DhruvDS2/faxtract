@@ -4,7 +4,7 @@ import { Code } from "@/components/Code";
 import { Morph } from "@/components/Morph";
 import { ReferralStatusPill } from "@/components/StatusBadge";
 import { StatusLine } from "@/components/StatusLine";
-import { AnimatePresence, crossfade, m, referralLayoutId } from "@/lib/motion";
+import { AnimatePresence, fade, m, referralLayoutId, useTransitionMarker } from "@/lib/motion";
 import { statusText } from "@/lib/status";
 import { SAMPLE_REFERRALS } from "./samples";
 
@@ -14,11 +14,15 @@ const LIST = SAMPLE_REFERRALS.slice(0, 4);
 export function MorphDemo() {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = LIST.find((r) => r.id === openId);
+  const marker = useTransitionMarker();
+  // the arriving view is opaque at once (its morph target must stay visible); the rest
+  // of it fades in through [data-route-morph], as on a route change
+  const arrive = { variants: fade, initial: false as const, animate: "animate", exit: "exit", "data-route-morph": "", ...marker };
   return (
     <div className="relative h-64 max-w-3xl overflow-hidden rounded-md border border-border" data-testid="morph-demo">
       <AnimatePresence initial={false}>
         {open ? (
-          <m.div key="detail" className="absolute inset-0 px-6 py-5" variants={crossfade} initial="initial" animate="animate" exit="exit">
+          <m.div key="detail" className="absolute inset-0 px-6 py-5" {...arrive}>
             <button type="button" onClick={() => setOpenId(null)} className="cursor-pointer text-meta text-fg-muted hover:text-fg" data-testid="morph-back">
               ← Sample list
             </button>
@@ -33,7 +37,7 @@ export function MorphDemo() {
             </p>
           </m.div>
         ) : (
-          <m.ul key="list" className="absolute inset-0 py-2" variants={crossfade} initial="initial" animate="animate" exit="exit">
+          <m.ul key="list" className="absolute inset-0 py-2" {...arrive}>
             {LIST.map((r) => (
               <li key={r.id}>
                 <button

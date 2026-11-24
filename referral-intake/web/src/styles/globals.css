@@ -76,12 +76,10 @@
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --motion-pop-scale: 0.98;
   --motion-dialog-y: 4px;
-  --motion-item-y: 4px;
 
   /* layout */
   --shell-nav-w: 224px;
   --shell-bar-h: 40px;
-  --row-h: 40px;
   --kv-label: 136px;
   --toast-offset-bottom: 80px;
   --toast-offset-side: 16px;
@@ -341,6 +339,16 @@
   }
 }
 
+/*
+ * Shared-element navigation: the incoming page is opaque at once so the morphing
+ * element stays visible; everything beside the path to it fades in after the
+ * outgoing page has left (each branch once, so opacities never compound).
+ */
+[data-route-morph] > :not([data-morph]):not(:has([data-morph])),
+[data-route-morph] :has([data-morph]) > :not([data-morph]):not(:has([data-morph])) {
+  animation: fade-in var(--dur-state) var(--ease-enter) var(--dur-fast) both;
+}
+
 /* reduced motion: every transform distance is zero, so CSS motion is opacity only */
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -348,7 +356,6 @@
     --stagger-field: 0ms;
     --motion-pop-scale: 1;
     --motion-dialog-y: 0px;
-    --motion-item-y: 0px;
   }
 }
 

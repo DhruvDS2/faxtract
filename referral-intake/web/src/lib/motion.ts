@@ -49,11 +49,17 @@ export const fade: Variants = {
   exit: { opacity: 0, transition: transition.exit },
 };
 
-/** Route-level crossfade (V7): the outgoing page leaves fast, the incoming one settles. */
+/**
+ * Route-level crossfade (V7), 320 ms in all: the outgoing page fades out (120 ms,
+ * exit curve), then the incoming one fades in (200 ms, enter curve). No overlap of
+ * two pages' text. `morph`: the incoming page is shown at once because a shared
+ * element is flying into it; its other content fades in via [data-route-morph] (CSS).
+ */
 export const crossfade: Variants = {
   initial: { opacity: 0 },
-  animate: { opacity: 1, transition: transition.panel },
+  animate: { opacity: 1, transition: { ...transition.state, delay: DURATION.fast } },
   exit: { opacity: 0, transition: transition.exit },
+  morph: { opacity: 1, transition: { duration: 0 } },
 };
 
 export type Side = "left" | "right" | "top" | "bottom";

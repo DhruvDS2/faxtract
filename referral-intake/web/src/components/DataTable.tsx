@@ -39,7 +39,10 @@ declare module "@tanstack/react-table" {
     headClassName?: string;
     /** Right-aligned, tabular numerals. */
     numeric?: boolean;
-    /** One line with an ellipsis; the full text goes in the title. Takes the remaining width. */
+    /**
+     * One line with an ellipsis; the full text goes in the title. Without a width in
+     * `className` the column takes the remaining width; with one, cap it too ("w-72 max-w-72").
+     */
     truncate?: boolean;
     /** Skeleton bar width while loading (Tailwind width class). */
     skeleton?: string;
@@ -262,8 +265,10 @@ export function DataTableView<T>({
                 key={cell.id}
                 className={cn(
                   (meta?.align === "right" || meta?.numeric) && "text-right",
-                  meta?.numeric && "tabular-nums",
-                  meta?.truncate && "w-full max-w-0",
+                  meta?.numeric && "whitespace-nowrap tabular-nums",
+                  // a truncating column without its own width takes the remaining width;
+                  // one with a width should also cap it (e.g. "w-72 max-w-72")
+                  meta?.truncate && !/(^|\s)w-/.test(meta.className ?? "") && "w-full max-w-0",
                   meta?.className,
                 )}
               >

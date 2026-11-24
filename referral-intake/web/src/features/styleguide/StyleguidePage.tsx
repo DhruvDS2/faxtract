@@ -591,7 +591,7 @@ const col = createColumnHelper<SampleReferral>();
 const columns = [
   col.accessor("patient", {
     header: "Patient",
-    meta: { truncate: true, skeleton: "w-40" },
+    meta: { truncate: true, className: "w-72 max-w-72", skeleton: "w-40" },
     cell: (c) => (
       <span className="flex min-w-0 items-baseline gap-2">
         <span className="truncate font-medium text-fg" title={c.getValue()}>

@@ -1,5 +1,5 @@
 import { forwardRef, useState } from "react";
-import { m, transition, useTransitionMarker } from "@/lib/motion";
+import { m, transition, useMotionPrefs, useTransitionMarker } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const TAGS = { div: m.div, span: m.span, h1: m.h1, h2: m.h2, h3: m.h3, p: m.p } as const;
@@ -29,11 +29,13 @@ export type MorphProps = {
 export const Morph = forwardRef<HTMLElement, MorphProps>(({ layoutId, as = "div", layoutDependency, className, children, ...rest }, ref) => {
   const Tag = TAGS[as] as typeof m.div;
   const [own] = useState(() => `morph-${++instances}`);
+  // reduced motion: no layoutId at all, so no projection transform is ever applied
+  const { reduce } = useMotionPrefs();
   const marker = useTransitionMarker();
   return (
     <Tag
       ref={ref as React.Ref<HTMLDivElement>}
-      layoutId={layoutId}
+      layoutId={reduce ? undefined : layoutId}
       layoutDependency={layoutDependency ?? own}
       data-morph={layoutId}
       transition={{ layout: transition.panel }}
