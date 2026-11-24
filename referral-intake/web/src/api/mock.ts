@@ -13,6 +13,8 @@
  *   ?mock=ris-down            /health reports the RIS down; approve and retry-send end in ris_error
  *   ?mock=slow                every request takes ~2.5 s (loading states)
  *   ?mock=extraction-pending  one referral stays `processing` with a live trace
+ *   ?mock=long-names          long patient, payor, study and file names everywhere
+ *   ?mock=one                 exactly one referral (a RIS error, so one order too)
  *   ?mock=normal              back to the default
  * The URL param is kept for the tab (sessionStorage), so in-app navigation keeps the
  * mode; localStorage "mock" sets a default for every tab.
@@ -47,7 +49,7 @@ const db = {
 const LATENCY = 180;
 const SLOW = 2500;
 
-export const MOCK_MODES = ["normal", "empty", "error", "ris-down", "slow", "extraction-pending"] as const;
+export const MOCK_MODES = ["normal", "empty", "error", "ris-down", "slow", "extraction-pending", "long-names", "one"] as const;
 export type MockMode = (typeof MOCK_MODES)[number];
 const isMode = (v: string | null): v is MockMode => !!v && (MOCK_MODES as readonly string[]).includes(v);
 
@@ -200,6 +202,28 @@ function pendingRecord(): ReferralRecord {
   return rec;
 }
 
+// ---------- long-names / one ----------
+
+const ONE_ID = "m02005"; // a RIS error: one referral and one order
+let longApplied = false;
+/** Lengthen every name a screen shows, once per page load (the mock db lives in memory). */
+function applyLongNames() {
+  if (longApplied) return;
+  longApplied = true;
+  for (const r of db.records.values()) {
+    const ref = r.referral;
+    if (ref.patient_last_name) ref.patient_last_name = `${ref.patient_last_name}-Vanderbilt-Ashworthington`;
+    if (ref.patient_first_name) ref.patient_first_name = `${ref.patient_first_name} Maximiliana Josephine`;
+    if (ref.payor_name) ref.payor_name = `${ref.payor_name} Cooperative of the Upper Valley (Commercial PPO)`;
+    if (ref.requested_study) ref.requested_study = `${ref.requested_study}, with additional sagittal STIR sequence as requested by the referring provider`;
+    if (ref.referring_practice) ref.referring_practice = `${ref.referring_practice} and Sports Medicine Associates of Greater Westchester`;
+    if (ref.clinical_indication) ref.clinical_indication = `${ref.clinical_indication} Symptoms persist despite six weeks of conservative management including physical therapy and NSAIDs; prior imaging from an outside facility is not available.`;
+    r.source_name = r.source_name.replace(/\.pdf$/, "_scanned_from_fax_line_2_hollis_park_imaging_outpatient.pdf");
+    if (r.order.last_error) r.order.last_error = `${r.order.last_error}; the RIS interface engine closed the connection before the MLLP frame was acknowledged`;
+    r.review_reasons = r.review_reasons.map((x) => `${x} (checked against the payor's published policy for this CPT code and the referring provider's documentation)`);
+  }
+}
+
 /** A new upload walks the graph a node per ~700 ms, then pauses at human review. */
 async function runUpload(r: ReferralRecord) {
   const run = `${r.id}-run-1`;
@@ -236,8 +260,12 @@ export async function mockFetch(path: string, init: RequestInit = {}): Promise<R
   // the pending referral exists only in its mode
   if (mode === "extraction-pending") pendingRecord();
   else if (db.records.has(PENDING_ID)) db.records.delete(PENDING_ID);
-  // empty: only what was uploaded in this session
-  const visible = () => [...db.records.values()].filter((r) => mode !== "empty" || r.id.startsWith("u"));
+  if (mode === "long-names") applyLongNames();
+  // empty: only what was uploaded in this session; one: a single referral (plus uploads)
+  const visible = () =>
+    [...db.records.values()].filter((r) =>
+      mode === "empty" ? r.id.startsWith("u") : mode === "one" ? r.id === ONE_ID || r.id.startsWith("u") : true,
+    );
 
   if (parts[0] === "health")
     return ok({ ok: mode !== "ris-down", db: true, ris: mode === "ris-down" ? "down" : "up", pipeline: "graph", extractor: "replay (mock)", threshold: 0.85 });

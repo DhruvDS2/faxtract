@@ -28,6 +28,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHotkeys } from "@/lib/hotkeys";
+import { DURATION_MS, STAGGER, STAGGER_MAX_ITEMS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { ErrorState } from "./States";
 import { TravelingHighlight, useTravelingHighlight } from "./TravelingHighlight";
@@ -188,13 +189,20 @@ export function DataTableView<T>({
     { enabled: keyboard },
   );
 
-  // progressive fill: only when rows arrive after a loading state, once per mount
+  // progressive fill: only when rows arrive after a loading state, once per mount. The
+  // stagger class comes off once the fill has played, so rows that appear later (a
+  // filter, a sort, a refetch) show at once instead of re-staggering.
   const wasLoading = useRef(loading);
   const [revealing, setRevealing] = useState(false);
   useEffect(() => {
     if (wasLoading.current && !loading && reveal) setRevealing(true);
     wasLoading.current = loading;
   }, [loading, reveal]);
+  useEffect(() => {
+    if (!revealing) return;
+    const t = window.setTimeout(() => setRevealing(false), STAGGER_MAX_ITEMS * STAGGER.row * 1000 + DURATION_MS.state + DURATION_MS.fast);
+    return () => window.clearTimeout(t);
+  }, [revealing]);
 
   const headCell = (align?: "left" | "right", numeric?: boolean) => cn((align === "right" || numeric) && "text-right");
 

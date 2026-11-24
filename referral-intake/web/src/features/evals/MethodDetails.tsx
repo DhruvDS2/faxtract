@@ -4,6 +4,7 @@ import { Code } from "@/components/Code";
 import { KeyValue } from "@/components/PageHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fmtDateTime, fmtMs, humanize } from "@/lib/format";
+import { stepLabel } from "@/lib/steps";
 import { fieldLabel, listJoin, plural } from "./copy";
 import { Value } from "./parts";
 
@@ -37,7 +38,8 @@ function StepTimings({ report }: { report: BenchmarkReport }) {
           {rows.map(([node, t]) => (
             <TableRow key={node} data-node={node}>
               <TableCell className="pl-0">
-                <Code>{node}</Code>
+                <span className="text-fg">{stepLabel(node)}</span>{" "}
+                <Code className="text-meta text-fg-faint">{node}</Code>
               </TableCell>
               <TableCell className="text-right tabular-nums">{t.n ?? <span className="text-fg-faint">-</span>}</TableCell>
               <TableCell className="text-right tabular-nums">{fmtMs(t.p50)}</TableCell>

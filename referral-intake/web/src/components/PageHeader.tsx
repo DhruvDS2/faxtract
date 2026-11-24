@@ -13,16 +13,24 @@ export type PageHeaderProps = {
   eyebrow?: React.ReactNode;
   /** Hairline under the header (default true). */
   divider?: boolean;
+  /** Let a sentence title wrap (balanced) instead of truncating to one line. */
+  wrap?: boolean;
   className?: string;
 };
 
-/** Page header: the page's one display line, a meta line, an actions slot. */
-export function PageHeader({ title, meta, status, actions, eyebrow, divider = true, className }: PageHeaderProps) {
+/**
+ * Page header: the page's one display line, a meta line, an actions slot.
+ * A text title truncates to one line (or wraps with `wrap`). A node title (e.g. a
+ * <Morph> shared element) is never clipped by the heading, so a morph can fly in from
+ * outside it; give the node its own `truncate` if it can be long.
+ */
+export function PageHeader({ title, meta, status, actions, eyebrow, divider = true, wrap = false, className }: PageHeaderProps) {
+  const text = typeof title === "string" || typeof title === "number";
   return (
     <header className={cn("flex shrink-0 items-start gap-4 px-6 pt-5 pb-4", divider && "border-b border-border", className)}>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {eyebrow && <div className="text-meta text-fg-muted">{eyebrow}</div>}
-        <h1 className="truncate text-display text-fg">{title}</h1>
+        <h1 className={cn("min-w-0 text-display text-fg", wrap ? "text-balance" : text ? "truncate" : "flex")}>{title}</h1>
         {status}
         {meta && <div className="text-body text-fg-muted tabular-nums">{meta}</div>}
       </div>
