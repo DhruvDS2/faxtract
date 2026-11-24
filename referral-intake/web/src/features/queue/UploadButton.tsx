@@ -1,13 +1,14 @@
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload } from "lucide-react";
 import { useUpload } from "@/api/queries";
+import { describeError } from "@/components/States";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 
 /**
  * Upload a fax PDF. The run continues in the background, so we go straight to the
- * pipeline graph for the new referral and watch its nodes light up.
+ * pipeline graph for the new referral and watch its steps light up (the demo
+ * script depends on this: /graph?referral=<id>).
  */
 export function UploadButton({ variant = "primary", size = "md" }: Pick<ButtonProps, "variant" | "size">) {
   const input = useRef<HTMLInputElement>(null);
@@ -20,10 +21,10 @@ export function UploadButton({ variant = "primary", size = "md" }: Pick<ButtonPr
       { file },
       {
         onSuccess: (rec) => {
-          toast.success(`Uploaded ${rec.source_name}`, { description: "Pipeline started. Following it on the graph." });
+          toast.success(`Uploaded ${rec.source_name}`, { description: "The pipeline is reading it. Following it on the graph." });
           navigate(`/graph?referral=${rec.id}`);
         },
-        onError: (err) => toast.error("Upload failed", { description: err instanceof Error ? err.message : String(err) }),
+        onError: (err) => toast.error("Couldn't upload the fax", { description: describeError(err).cause }),
       },
     );
   };
@@ -42,9 +43,8 @@ export function UploadButton({ variant = "primary", size = "md" }: Pick<ButtonPr
           e.target.value = ""; // allow picking the same file again
         }}
       />
-      <Button variant={variant} size={size} onClick={() => input.current?.click()} disabled={upload.isPending}>
-        <Upload aria-hidden />
-        {upload.isPending ? "Uploading…" : "Upload fax"}
+      <Button variant={variant} size={size} onClick={() => input.current?.click()} loading={upload.isPending} loadingText="Uploading…">
+        Upload fax
       </Button>
     </>
   );
