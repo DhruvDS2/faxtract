@@ -149,7 +149,7 @@ export const NodePanel = forwardRef<HTMLElement, NodePanelProps>(function NodePa
               {latestClosed?.close?.branch && (
                 <KeyValue label="Branch taken">
                   <Code>
-                    {outs.find((o) => o.target === latestClosed.close!.branch)?.label ?? "next"} → {latestClosed.close.branch}
+                    {outs.find((o) => o.target === latestClosed.close!.branch)?.label ?? "always"} → {latestClosed.close.branch}
                   </Code>
                 </KeyValue>
               )}
