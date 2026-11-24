@@ -62,7 +62,16 @@ function ReferralScreen({ id }: { id: string }) {
   const q = useReferral(id);
   const summary = useCachedSummary(id);
   if (!q.data && q.error instanceof ApiError && q.error.status === 404) return <NotFound />;
-  return <ReferralView id={id} record={q.data} summary={summary} error={q.data ? null : q.error} onRetry={() => void q.refetch()} />;
+  if (!q.data && q.isError)
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {summary && <DetailHeader id={id} name={summary.patient_name} status={summaryView(summary)} flow={null} graphLink={false} actions={null} />}
+        <div className="flex flex-1 flex-col justify-center">
+          <ErrorState error={q.error} title="Couldn't load this referral" onRetry={() => void q.refetch()} />
+        </div>
+      </div>
+    );
+  return <ReferralView id={id} record={q.data} summary={summary} />;
 }
 
 function NotFound() {
@@ -85,15 +94,13 @@ type ViewProps = {
   id: string;
   record: ReferralRecord | undefined;
   summary: ReferralSummary | null;
-  error: unknown;
-  onRetry: () => void;
 };
 
 /**
  * One stable tree from first paint to loaded: the header (the morph target) renders
  * from the cached queue row while the record loads, then the fax and fields fill in.
  */
-function ReferralView({ id, record, summary, error, onRetry }: ViewProps) {
+function ReferralView({ id, record, summary }: ViewProps) {
   const [params, setParams] = useSearchParams();
   const { reduce } = useMotionPrefs();
   const back = useBackToQueue();
@@ -207,11 +214,7 @@ function ReferralView({ id, record, summary, error, onRetry }: ViewProps) {
   );
 
   const details = !record ? (
-    error ? (
-      <ErrorState error={error} title="Couldn't load this referral" onRetry={onRetry} />
-    ) : (
-      <FieldsSkeleton />
-    )
+    <FieldsSkeleton />
   ) : (
     <>
       {processing ? (

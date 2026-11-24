@@ -47,7 +47,7 @@ export function statusView(record: ReferralRecord, reasons: number, trace: Trace
             tone: "ok",
             text: o.ack_code ? `Sent to RIS · ACK ${o.ack_code}` : "Sent to RIS",
             running: false,
-            detail: `${o.order_id ?? "order"} · ${ordinalAttempt(o.attempts)}${o.sent_at ? ` · ${fmtWhen(o.sent_at)}` : ""}`,
+            detail: `${ordinalAttempt(o.attempts)}${o.sent_at ? ` · sent ${fmtWhen(o.sent_at)}` : ""} · ${record.source_name}`,
           };
     case "ris_error":
       return {

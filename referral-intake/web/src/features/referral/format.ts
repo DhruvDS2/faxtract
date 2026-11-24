@@ -34,7 +34,7 @@ export const plainExcerpt = (text: string) =>
 export function chunkParts(text: string): { section: string | null; body: string } {
   const lines = text.split("\n");
   let i = 0;
-  if (lines.length > 1 && !lines[0].startsWith("#") && /\u2014|Medical Policy/i.test(lines[0])) i = 1;
+  if (lines.length > 1 && !/^#{2,}/.test(lines[0]) && /\u2014|Medical Policy/i.test(lines[0])) i = 1;
   let section: string | null = null;
   if (lines[i]?.startsWith("#")) {
     section = lines[i].replace(/^#+\s*/, "").trim() || null;

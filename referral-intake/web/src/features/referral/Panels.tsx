@@ -305,7 +305,15 @@ function OrderBody({ record, actions, ready }: { record: ReferralRecord; actions
   const sent = order.attempts > 0;
   const label = (
     <>
-      ORM^O01{orderId && <> · {orderId}</>} · {order.message ? `as sent${order.sent_at ? ` ${fmtWhen(order.sent_at)}` : ""}` : "preview of what Approve sends"}
+      ORM^O01
+      {orderId && (
+        <>
+          {" · "}
+          <Code>{orderId}</Code>
+        </>
+      )}
+      {" · "}
+      {order.message ? `as sent${order.sent_at ? ` ${fmtWhen(order.sent_at)}` : ""}` : "preview of what Approve sends"}
     </>
   );
 
