@@ -165,7 +165,9 @@ export function QueuePage() {
     if (selectedId) scroller.current?.querySelector(`[data-id="${CSS.escape(selectedId)}"]`)?.scrollIntoView({ block: "center" });
   }, [data, selectedId]);
 
-  const threshold = useHealth().data?.threshold;
+  const health = useHealth().data;
+  const threshold = health?.threshold;
+  const risDown = health?.ris === "down";
   const meta = useMemo<QueueTableMeta>(() => ({ now, onOpen: remember, selectedId, threshold }), [now, remember, selectedId, threshold]);
 
   const summaryLine = useMemo(() => (data ? metaLine(data, counts, now) : null), [data, counts, now]);
@@ -199,6 +201,19 @@ export function QueuePage() {
       <StatusLine tone="bad" detail={`${describeError(query.error).cause} Showing the list from ${clock(query.dataUpdatedAt)}.`}>
         Couldn't refresh the queue
       </StatusLine>
+    ) : undefined;
+  // RIS down (GET /health): the same quiet line as the orders page, so an approval or a
+  // retry from here isn't a surprise
+  const headerStatus =
+    risDown || refreshError ? (
+      <>
+        {risDown && (
+          <StatusLine tone="bad" data-testid="ris-down">
+            The RIS isn&rsquo;t answering. Approved orders wait as RIS errors until it&rsquo;s back.
+          </StatusLine>
+        )}
+        {refreshError}
+      </>
     ) : undefined;
 
   // ---------- filters ----------
@@ -239,7 +254,7 @@ export function QueuePage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader divider={false} title={title} status={refreshError} meta={metaText} actions={<UploadButton />} />
+      <PageHeader divider={false} title={title} status={headerStatus} meta={metaText} actions={<UploadButton />} />
 
       <div className="flex h-10 shrink-0 items-end gap-6 border-b border-border px-6">
         <StatusTabs
