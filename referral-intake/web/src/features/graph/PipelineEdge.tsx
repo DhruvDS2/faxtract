@@ -8,8 +8,6 @@ export type PipelineEdgeData = {
   conditional: boolean;
   label: string | null;
   taken: boolean;
-  /** Draw it quieter: a referral is selected and this edge isn't on its path. */
-  faded: boolean;
 };
 export type PipelineFlowEdge = Edge<PipelineEdgeData, "pipeline">;
 
@@ -59,7 +57,7 @@ function arrow(p: XY, dir: XY) {
 
 function PipelineEdgeView({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps<PipelineFlowEdge>) {
   if (!data) return null;
-  const { route, conditional, label, taken, faded } = data;
+  const { route, conditional, label, taken } = data;
   const s = { x: sourceX, y: sourceY };
   const t = { x: targetX, y: targetY };
   const geo =
@@ -76,10 +74,9 @@ function PipelineEdgeView({ id, sourceX, sourceY, targetX, targetY, data }: Edge
           stroke,
           strokeWidth: taken ? 2 : 1,
           strokeDasharray: conditional && !taken ? "4 3" : undefined,
-          opacity: faded ? 0.7 : 1,
         }}
       />
-      <path d={arrow(geo.tip, geo.dir)} fill={stroke} opacity={faded ? 0.7 : 1} />
+      <path d={arrow(geo.tip, geo.dir)} fill={stroke} />
       {label && (
         <EdgeLabelRenderer>
           <div

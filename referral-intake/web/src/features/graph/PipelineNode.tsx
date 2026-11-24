@@ -54,7 +54,7 @@ function PipelineNodeView({ data }: NodeProps<PipelineFlowNode>) {
       data-state={state}
       title={terminal ? undefined : node.id}
       className={cn(
-        "flex size-full items-center gap-1.5 rounded-md border transition-colors duration-150",
+        "relative flex size-full items-center gap-1.5 rounded-md border transition-colors duration-150",
         terminal ? "justify-center px-2 text-xs" : "cursor-pointer px-2.5 text-sm",
         terminal && look === "idle" ? "border-border bg-surface text-fg-muted" : STATE_CLASS[look],
         selected && "ring-2 ring-accent-border ring-offset-1 ring-offset-bg",
@@ -79,8 +79,9 @@ function PipelineNodeView({ data }: NodeProps<PipelineFlowNode>) {
           )}
           {executions > 1 && (
             <span
-              className="rounded-full border border-current/30 px-1 text-xs leading-4 tabular-nums"
+              className="absolute -top-2 -right-2 rounded-full border border-current/40 bg-bg px-1 text-xs leading-4 tabular-nums"
               title={`${executions} executions across runs`}
+              aria-label={`${executions} executions`}
             >
               ×{executions}
             </span>

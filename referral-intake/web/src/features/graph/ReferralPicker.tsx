@@ -51,7 +51,7 @@ export function ReferralPicker({
               </SelectItem>
             );
           })}
-          {missing && (
+          {missing && value && (
             <SelectItem value={value} data-id={value}>
               {record ? (
                 <span className="flex min-w-0 items-center gap-2">

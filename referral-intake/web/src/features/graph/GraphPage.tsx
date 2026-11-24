@@ -64,7 +64,7 @@ export function GraphPage() {
           actions={
             <>
               {record.data && <StatusBadge status={record.data.status} />}
-              {referralId && (
+              {referralId && !record.isError && (
                 <Button asChild variant="ghost" size="sm">
                   <Link to={`/referrals/${referralId}`}>
                     Open referral <ArrowUpRight />
@@ -111,7 +111,7 @@ export function GraphPage() {
               )}
             </div>
 
-            {referralId && (
+            {referralId && !record.isError && (
               <section
                 className={cn("flex shrink-0 flex-col border-t border-border", timelineOpen ? "h-44" : "h-9")}
                 aria-label={isV1 ? "v1 stage events" : "Run timeline"}

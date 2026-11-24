@@ -81,7 +81,7 @@ export function GraphCanvas({
 
   const edges = useMemo<PipelineFlowEdge[]>(
     () =>
-      structure.edges.flatMap((e, i) => {
+      structure.edges.flatMap<PipelineFlowEdge>((e, i) => {
         const route = layout.routes.get(`e${i}`);
         if (!route) return [];
         const taken = !dimmed && !!run?.taken.has(edgeKey(e));
@@ -96,11 +96,12 @@ export function GraphCanvas({
             targetHandle: side ? `${side}t` : "t",
             selectable: false,
             focusable: false,
-            zIndex: taken ? 1 : 0,
-            data: { route, conditional: e.conditional, label: e.label, taken, faded: false },
+            data: { route, conditional: e.conditional, label: e.label, taken },
           },
         ];
-      }),
+      })
+      // Taken edges last, so the path draws over crossing edges but stays under the label chips.
+      .sort((a, b) => Number(a.data!.taken) - Number(b.data!.taken)),
     [structure, layout, run, dimmed],
   );
 
