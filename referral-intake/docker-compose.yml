@@ -1,0 +1,34 @@
+# OPTIONAL and UNTESTED: Docker was not available where this repo's demo was verified.
+# The supported path is `make demo`, which runs a project-local Postgres without Docker.
+#
+# This gives you the same database (Postgres 16 + pgvector, database `faxtract`) in a
+# container, on the demo's port:
+#
+#   docker compose up -d db
+#   export DATABASE_URL=postgresql+psycopg://postgres@127.0.0.1:55432/faxtract
+#   make demo            # sees DATABASE_URL, so it skips its own Postgres
+#   ...
+#   make demo-stop && docker compose down        # add -v to drop the data volume
+#
+# Don't run it next to the `make demo` Postgres: both want 127.0.0.1:55432.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: faxtract
+      # Local demo only: no password, bound to 127.0.0.1 below.
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - faxtract-pg:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d faxtract"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  faxtract-pg:
