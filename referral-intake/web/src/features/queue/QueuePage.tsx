@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { SortingState } from "@tanstack/react-table";
 import type { ReferralStatus, ReferralSummary } from "@/contracts";
@@ -166,9 +166,10 @@ export function QueuePage() {
   );
   const pin = useCallback((r: ReferralSummary) => setPinned((p) => ({ ...p, [r.id]: p[r.id] ?? r.status })), []);
 
-  // coming back from a referral: the row it was opened from is in view
+  // coming back from a referral: the row it was opened from is in view, before paint
+  // (and before a shared element flying back from the referral header measures it)
   const restored = useRef(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (restored.current || !data) return;
     restored.current = true;
     if (selectedId) scroller.current?.querySelector(`[data-id="${CSS.escape(selectedId)}"]`)?.scrollIntoView({ block: "center" });
