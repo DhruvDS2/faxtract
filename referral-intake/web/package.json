@@ -7,6 +7,8 @@
     "dev:mock": "VITE_MOCK=1 vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
+    "lint:tokens": "node scripts/lint-tokens.mjs",
+    "check:contrast": "node scripts/contrast.mjs",
     "preview": "vite preview",
     "e2e": "playwright test"
   },
