@@ -1,5 +1,7 @@
 # Resume plan: faxtract-ui-upgrade (paused 2026-11-24, at Dhruv's request)
 
+> **Resumed and completed 2026-11-24.** Every lane is merged and the Phase 3 gate passed; see `docs/gates/UI-UPGRADE-GATE.md`. This file is kept as the record of the pause.
+
 - **Run prompt and decision log:** `docs/UI-UPGRADE-RUN.md`
 - **Conventions:** `docs/ORCHESTRATOR.md`
 - **Design docs:** `docs/design/` (AUDIT, PROPOSAL, refs/, before/)
