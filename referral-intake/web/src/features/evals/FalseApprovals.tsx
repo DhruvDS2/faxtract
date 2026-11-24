@@ -41,12 +41,12 @@ const columns = [
   col.accessor("predicted", {
     header: "Predicted",
     meta: { className: "w-px align-top py-2" },
-    cell: (c) => <Code className="rounded-sm bg-surface-2 px-1">{show(c.getValue())}</Code>,
+    cell: (c) => <Code className="rounded-md bg-surface-2 px-1">{show(c.getValue())}</Code>,
   }),
   col.accessor("truth", {
     header: "Truth",
     meta: { className: "w-px align-top py-2" },
-    cell: (c) => <Code className="rounded-sm bg-surface-2 px-1">{show(c.getValue())}</Code>,
+    cell: (c) => <Code className="rounded-md bg-surface-2 px-1">{show(c.getValue())}</Code>,
   }),
   col.accessor("confidence", {
     header: "Confidence",

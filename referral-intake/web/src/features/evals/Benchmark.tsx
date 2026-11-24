@@ -221,7 +221,7 @@ export function RunFacts({ report }: { report: BenchmarkReport }) {
       <KeyValue label="Critical fields">
         <span className="flex flex-wrap gap-1">
           {report.critical_fields.map((f) => (
-            <Code key={f} className="rounded-sm border border-border px-1 text-xs text-fg-muted">
+            <Code key={f} className="rounded-md border border-border px-1 text-xs text-fg-muted">
               {f}
             </Code>
           ))}

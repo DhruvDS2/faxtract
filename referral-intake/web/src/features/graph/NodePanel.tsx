@@ -150,7 +150,7 @@ export function NodePanel({
                   <Code
                     key={`${e.target}-${e.label}`}
                     className={cn(
-                      "rounded-sm border px-1",
+                      "rounded-md border px-1",
                       run?.taken.has(`${e.source}->${e.target}`) ? "border-accent-border text-accent" : "border-border text-fg-muted",
                     )}
                   >

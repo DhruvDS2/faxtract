@@ -81,7 +81,7 @@ function PipelineEdgeView({ id, sourceX, sourceY, targetX, targetY, data }: Edge
         <EdgeLabelRenderer>
           <div
             className={cn(
-              "nodrag nopan pointer-events-none absolute rounded-sm border px-1 text-xs leading-4 whitespace-nowrap",
+              "nodrag nopan pointer-events-none absolute rounded-md border px-1 text-xs leading-4 whitespace-nowrap",
               taken ? "border-accent-border bg-accent-subtle text-accent" : "border-border bg-bg text-fg-muted",
             )}
             style={{ transform: `translate(-50%, -50%) translate(${labelAt.x}px, ${labelAt.y}px)` }}

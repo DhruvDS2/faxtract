@@ -14,7 +14,6 @@ import { PageHeader } from "@/components/PageHeader";
 import { AckBadge, StatusBadge } from "@/components/StatusBadge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/States";
 import { fmtDateTime } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { DataTable } from "@/features/graph/DataTable";
 
 type Filter = "all" | "errors";
@@ -39,7 +38,7 @@ function RetryButton({ row }: { row: RisOrderRow }) {
         });
       }}
     >
-      <RotateCw className={cn(retry.isPending && "animate-spin")} />
+      <RotateCw />
       {retry.isPending ? "Sending" : "Retry"}
     </Button>
   );

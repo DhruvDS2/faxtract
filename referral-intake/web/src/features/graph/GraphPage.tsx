@@ -18,7 +18,7 @@ import { GraphCanvas } from "./GraphCanvas";
 import { NodePanel } from "./NodePanel";
 import { ReferralPicker } from "./ReferralPicker";
 import { RunTimeline } from "./RunTimeline";
-import { deriveRun, isSettling, type GraphRun } from "./trace";
+import { deriveRun, executions, isSettling, type GraphRun } from "./trace";
 
 /** Screen 3: the served LangGraph, coloured by what it did for one referral. */
 export function GraphPage() {
@@ -32,7 +32,7 @@ export function GraphPage() {
   // Poll the trace while the referral is settling or any node is still running.
   const [anyRunning, setAnyRunning] = useState(false);
   const trace = useTrace(referralId, { live: isSettling(record.data?.status) || anyRunning });
-  useEffect(() => setAnyRunning(!!trace.data?.some((e, i, all) => e.status === "running" && !closedLater(all, i))), [trace.data]);
+  useEffect(() => setAnyRunning(executions(trace.data ?? []).some((e) => e.status === "running")), [trace.data]);
 
   const isV1 = record.data?.pipeline === "v1";
   const run = useMemo<GraphRun | null>(() => {
@@ -129,7 +129,7 @@ export function GraphPage() {
                   {trace.data && <span className="text-xs text-fg-muted tabular-nums">{trace.data.length} events</span>}
                   {run?.live && (
                     <span className="inline-flex items-center gap-1.5 text-xs text-accent">
-                      <span className="size-1.5 animate-pulse rounded-full bg-accent" aria-hidden /> Live
+                      <span className="size-1.5 rounded-full bg-accent" aria-hidden /> Live
                     </span>
                   )}
                   {!isV1 && <Legend />}
@@ -166,9 +166,6 @@ export function GraphPage() {
     </ReactFlowProvider>
   );
 }
-
-const closedLater = (all: TraceEvent[], i: number) =>
-  all.some((x, j) => j !== i && x.seq > all[i].seq && x.run_id === all[i].run_id && x.node === all[i].node && x.status !== "running");
 
 function HeaderMeta({
   structure,
@@ -286,7 +283,7 @@ function RisErrorBanner({ record }: { record: ReferralRecord }) {
         </span>
       </div>
       <Button size="sm" onClick={onRetry} disabled={retry.isPending}>
-        <RotateCw className={cn(retry.isPending && "animate-spin")} /> Retry send
+        <RotateCw /> {retry.isPending ? "Sending" : "Retry send"}
       </Button>
     </div>
   );
@@ -337,7 +334,7 @@ function Legend() {
     <div className="ml-auto hidden items-center gap-3 pr-2 text-xs text-fg-muted lg:flex" aria-label="Legend">
       {items.map((i) => (
         <span key={i.label} className="inline-flex items-center gap-1.5">
-          <span className={cn("h-2.5 w-4 rounded-sm border", i.className)} aria-hidden />
+          <span className={cn("h-2.5 w-4 rounded-md border", i.className)} aria-hidden />
           {i.label}
         </span>
       ))}

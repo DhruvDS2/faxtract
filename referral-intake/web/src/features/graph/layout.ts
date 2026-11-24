@@ -51,6 +51,7 @@ export function layeredLayout(
   const laneGap = opts.laneGap ?? 20;
   const backOffset = opts.backEdgeOffset ?? 36;
   const sweeps = opts.sweeps ?? 12;
+  if (nodesIn.length === 0) return { positions: new Map(), ranks: new Map(), routes: new Map(), width: 0, height: 0 };
 
   const nodeById = new Map(nodesIn.map((n) => [n.id, n]));
   const edges = edgesIn.filter((e) => nodeById.has(e.source) && nodeById.has(e.target));
