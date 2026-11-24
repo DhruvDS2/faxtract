@@ -175,7 +175,7 @@ export function QueuePage() {
     if (selectedId) scroller.current?.querySelector(`[data-id="${CSS.escape(selectedId)}"]`)?.scrollIntoView({ block: "center" });
   }, [data, selectedId]);
 
-  const meta = useMemo<QueueTableMeta>(() => ({ now, onOpen: remember }), [now, remember]);
+  const meta = useMemo<QueueTableMeta>(() => ({ now, onOpen: remember, selectedId }), [now, remember, selectedId]);
 
   // ---------- header ----------
   let title: React.ReactNode;

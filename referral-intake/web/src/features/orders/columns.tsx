@@ -6,7 +6,7 @@ import { Code } from "@/components/Code";
 import { StatusPill } from "@/components/StatusPill";
 import { Tip } from "@/components/ui/tooltip";
 import { fmtAge, fmtDateTime } from "@/lib/format";
-import { fade, m } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 import { orderState, type OrderKind } from "./orderState";
 
 /** An order row; `sortAt` holds a retried row in its place while the page is open. */
@@ -24,7 +24,7 @@ const Dash = () => <span className="text-fg-faint">-</span>;
 
 /**
  * One status column with the ACK folded in, the RIS's error muted beneath it.
- * A change on screen (a retry's answer) fades in over 200 ms; first paint is still.
+ * A change on screen (a retry's answer) fades in over 200 ms (CSS); first paint is still.
  */
 function StatusCell({ row, sending }: { row: RisOrderRow; sending: boolean }) {
   const s = orderState(row, sending);
@@ -32,7 +32,7 @@ function StatusCell({ row, sending }: { row: RisOrderRow; sending: boolean }) {
   const key = `${s.label}|${detail ?? ""}`;
   const first = useRef(key);
   return (
-    <m.div key={key} className="flex min-w-0 flex-col" variants={fade} initial={key === first.current ? false : "initial"} animate="animate">
+    <div key={key} className={cn("flex min-w-0 flex-col", key !== first.current && "animate-fade-in")}>
       <StatusPill tone={s.tone} running={s.running} data-kind={s.kind}>
         {s.label}
       </StatusPill>
@@ -42,7 +42,7 @@ function StatusCell({ row, sending }: { row: RisOrderRow; sending: boolean }) {
           {detail}
         </span>
       )}
-    </m.div>
+    </div>
   );
 }
 

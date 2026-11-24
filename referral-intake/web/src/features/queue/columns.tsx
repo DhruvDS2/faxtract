@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { ColumnDef, SortingFn, SortingState } from "@tanstack/react-table";
 import type { ReferralStatus, ReferralSummary } from "@/contracts";
@@ -8,8 +8,9 @@ import { Morph } from "@/components/Morph";
 import { ReferralStatusPill } from "@/components/StatusBadge";
 import { Tip } from "@/components/ui/tooltip";
 import { fmtAge, fmtDateTime } from "@/lib/format";
-import { fade, m, referralLayoutId } from "@/lib/motion";
+import { referralLayoutId } from "@/lib/motion";
 import { STATUS_ORDER, statusText } from "@/lib/status";
+import { cn } from "@/lib/utils";
 
 /**
  * A queue row. `sortStatus` holds a row in its place while an action on it settles
@@ -17,8 +18,8 @@ import { STATUS_ORDER, statusText } from "@/lib/status";
  */
 export type QueueRow = ReferralSummary & { sortStatus?: ReferralStatus };
 
-/** Table meta: the clock for relative ages, and what a row click does. */
-export type QueueTableMeta = { now: number; onOpen: (id: string) => void };
+/** Table meta: the clock for relative ages, what a row click does, and the keyboard selection. */
+export type QueueTableMeta = { now: number; onOpen: (id: string) => void; selectedId: string | null };
 
 const statusRank = (s: ReferralStatus) => {
   const i = STATUS_ORDER.indexOf(s);
@@ -38,14 +39,53 @@ export const NO_PAYOR = "__none__";
 
 const Dash = () => <span className="text-fg-faint">-</span>;
 
-/** A status that changed while on screen fades to its new text (200 ms); first paint is still. */
+/**
+ * A status that changed while on screen fades to its new text (200 ms, CSS: no
+ * motion component per row); first paint is still.
+ */
 function StatusCell({ row }: { row: QueueRow }) {
   const label = statusText(row.status, row.ack_code).label;
   const first = useRef(label);
   return (
-    <m.span key={label} className="flex min-w-0" variants={fade} initial={label === first.current ? false : "initial"} animate="animate">
+    <span key={label} className={cn("flex min-w-0", label !== first.current && "animate-fade-in")}>
       <ReferralStatusPill status={row.status} ack={row.ack_code} />
-    </m.span>
+    </span>
+  );
+}
+
+/**
+ * The patient name, and the ONTO shared element: it grows into the referral header
+ * (Lane B wraps the target). A row only carries the <Morph> once it can be opened
+ * by hand (pointer over it, focus in it, or keyboard-selected): mounting a motion
+ * component on all 57 rows made the queue's mount a long task during the route
+ * crossfade. The link stays mounted, so focus never moves.
+ */
+function PatientName({ row, armed }: { row: QueueRow; armed: boolean }) {
+  const ref = useRef<HTMLElement>(null);
+  const [touched, setTouched] = useState(false);
+  const live = armed || touched;
+  useEffect(() => {
+    if (live) return;
+    const tr = ref.current?.closest("tr");
+    if (!tr) return;
+    const arm = () => setTouched(true);
+    tr.addEventListener("pointerenter", arm);
+    tr.addEventListener("focusin", arm);
+    return () => {
+      tr.removeEventListener("pointerenter", arm);
+      tr.removeEventListener("focusin", arm);
+    };
+  }, [live]);
+  const name = row.patient_name ?? <span className="font-normal text-fg-faint">Unknown patient</span>;
+  const cls = "min-w-0 truncate group-hover/name:underline";
+  return live ? (
+    <Morph ref={ref} as="span" layoutId={referralLayoutId(row.id)} className={cls}>
+      {name}
+    </Morph>
+  ) : (
+    <span ref={ref} className={cls}>
+      {name}
+    </span>
   );
 }
 
@@ -58,15 +98,12 @@ export const columns: ColumnDef<QueueRow>[] = [
     meta: { truncate: true, className: "w-60", headClassName: "w-60", skeleton: "w-40" },
     cell: ({ row, table }) => {
       const r = row.original;
-      const open = (table.options.meta as QueueTableMeta).onOpen;
+      const { onOpen, selectedId } = table.options.meta as QueueTableMeta;
       return (
         <span className="flex min-w-0 items-baseline gap-2">
-          {/* ONTO: the name grows into the referral header (Lane B wraps the target) */}
-          <Morph as="span" layoutId={referralLayoutId(r.id)} className="min-w-0 truncate font-medium text-fg">
-            <Link to={`/referrals/${r.id}`} onClick={() => open(r.id)} className="hover:underline">
-              {r.patient_name ?? <span className="font-normal text-fg-faint">Unknown patient</span>}
-            </Link>
-          </Morph>
+          <Link to={`/referrals/${r.id}`} onClick={() => onOpen(r.id)} className="group/name flex min-w-0 font-medium text-fg">
+            <PatientName row={r} armed={selectedId === r.id} />
+          </Link>
           {r.patient_dob && <span className="shrink-0 text-meta text-fg-faint tabular-nums">{r.patient_dob}</span>}
         </span>
       );
