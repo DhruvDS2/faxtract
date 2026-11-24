@@ -431,10 +431,10 @@ def run_streamed(cmd: list[str], log_name: str, env: dict | None = None, cwd: Pa
 def bootstrap(url: str) -> None:
     rc = run_streamed([sys.executable, "-m", "scripts.bootstrap"], "bootstrap.log", env={"DATABASE_URL": url})
     if rc == 3:
-        raise DemoError("bootstrap: graph.service.setup() is not implemented on this branch (Lane C's "
-                        "graph/service.py). init_db and the policy index did complete.")
+        raise DemoError("graph.service.setup() is not implemented on this branch (Lane C's "
+                        "graph/service.py); init_db and the policy index did complete")
     if rc:
-        raise DemoError(f"bootstrap failed (exit {rc}); full output in .demo/logs/bootstrap.log")
+        raise DemoError(f"exit {rc}; full output in .demo/logs/bootstrap.log")
 
 
 def corpus_ready() -> bool:
@@ -560,7 +560,7 @@ def run_seed(state: dict) -> None:
                                     fault_names=(state.get("ris_fault_last_names") or "").split(","),
                                     log=lambda m: say("    " + m if m else ""))
         except seed_demo.SeedError as exc:
-            raise DemoError(f"seed: {exc}") from exc
+            raise DemoError(str(exc)) from exc
     if not report.ok:
         missing = [name for name, ok, _ in report.checks if not ok]
         raise DemoError(f"seed finished but the demo mix is incomplete: {', '.join(missing)}")
@@ -604,6 +604,11 @@ def cmd_up(args) -> int:
 
     say(f"[{len(steps) + 1}/{len(steps) + 1}] summary ({time.monotonic() - t_all:.0f}s)")
     running = [n for n in SERVICES if service_pid(n)]
+    try:
+        if pg_running():
+            running.append(f"postgres :{PG_PORT}")
+    except DemoError:
+        pass
     if running:
         say(f"    running: {', '.join(running)}   logs: .demo/logs/   stop: make demo-stop")
     if "web" in running:
