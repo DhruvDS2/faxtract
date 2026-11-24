@@ -1,20 +1,42 @@
-export function PageHeader({ title, meta, actions }: { title: React.ReactNode; meta?: React.ReactNode; actions?: React.ReactNode }) {
+import { cn } from "@/lib/utils";
+
+export type PageHeaderProps = {
+  /** The display line. Prefer a sentence that says what matters: "31 referrals need review". */
+  title: React.ReactNode;
+  /** One meta line under the title (counts, provenance), 13px muted. */
+  meta?: React.ReactNode;
+  /** A StatusLine (or other one-line status) between title and meta. */
+  status?: React.ReactNode;
+  /** Right-aligned actions; at most one primary. */
+  actions?: React.ReactNode;
+  /** Something above the title, e.g. a "← Queue" back link. */
+  eyebrow?: React.ReactNode;
+  /** Hairline under the header (default true). */
+  divider?: boolean;
+  className?: string;
+};
+
+/** Page header: the page's one display line, a meta line, an actions slot. */
+export function PageHeader({ title, meta, status, actions, eyebrow, divider = true, className }: PageHeaderProps) {
   return (
-    <div className="flex min-h-12 items-center gap-3 border-b border-border px-4 py-2">
-      <div className="min-w-0">
-        <h1 className="truncate text-lg font-semibold">{title}</h1>
-        {meta && <div className="text-xs text-fg-muted">{meta}</div>}
+    <header className={cn("flex shrink-0 items-start gap-4 px-6 pt-5 pb-4", divider && "border-b border-border", className)}>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {eyebrow && <div className="text-meta text-fg-muted">{eyebrow}</div>}
+        <h1 className="truncate text-display text-fg">{title}</h1>
+        {status}
+        {meta && <div className="text-body text-fg-muted tabular-nums">{meta}</div>}
       </div>
-      {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
-    </div>
+      {actions && <div className="flex shrink-0 items-center gap-2 pt-0.5">{actions}</div>}
+    </header>
   );
 }
 
-export function KeyValue({ label, children }: { label: string; children: React.ReactNode }) {
+/** A label / value row (label column is --kv-label wide). */
+export function KeyValue({ label, children, className }: { label: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] items-baseline gap-3 py-1">
-      <div className="text-xs text-fg-muted">{label}</div>
-      <div className="min-w-0 text-sm">{children}</div>
+    <div className={cn("grid grid-cols-[var(--kv-label)_minmax(0,1fr)] items-baseline gap-4 py-1", className)}>
+      <div className="text-meta text-fg-muted">{label}</div>
+      <div className="min-w-0 text-body">{children}</div>
     </div>
   );
 }
