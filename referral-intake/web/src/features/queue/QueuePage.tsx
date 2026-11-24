@@ -12,13 +12,12 @@ import { Kbd } from "@/components/ui/kbd";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STATUS } from "@/lib/status";
 import { cn } from "@/lib/utils";
-import { CountChange } from "./CountChange";
+import { CountThrough } from "@/components/CountThrough";
 import { DEFAULT_SORT, NO_PAYOR, columns, type QueueRow, type QueueTableMeta } from "./columns";
 import { QuickAction } from "./QuickAction";
-import { queueMemory } from "./queueMemory";
+import { queueMemory } from "@/lib/queueMemory";
 import { StatusTabs, type StatusTab } from "./StatusTabs";
 import { UploadButton } from "./UploadButton";
-import { FillOnce } from "./FillOnce";
 import { useNow } from "./useNow";
 
 const ALL = "all";
@@ -178,7 +177,7 @@ export function QueuePage() {
     title =
       needsReview > 0 ? (
         <>
-          <CountChange value={needsReview} from={countFrom} /> {plural(needsReview, "referral needs review", "referrals need review")}
+          <CountThrough value={needsReview} from={countFrom} initial={false} /> {plural(needsReview, "referral needs review", "referrals need review")}
         </>
       ) : (
         "Nothing needs review"
@@ -270,7 +269,6 @@ export function QueuePage() {
       </div>
 
       <div ref={scroller} tabIndex={-1} aria-label="Referrals" className="min-h-0 flex-1 overflow-auto focus-visible:outline-none">
-        <FillOnce ready={!query.isPending}>
           <DataTable
             data={rows}
             columns={columns}
@@ -298,7 +296,6 @@ export function QueuePage() {
             quickAction={(r) => <QuickAction row={r} onOpen={remember} onRetryStart={pin} />}
             className={TABLE_LAYOUT}
           />
-        </FillOnce>
       </div>
     </div>
   );

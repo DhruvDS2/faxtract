@@ -6,6 +6,7 @@ import { Code } from "@/components/Code";
 import { StatusPill } from "@/components/StatusPill";
 import { Tip } from "@/components/ui/tooltip";
 import { fmtAge, fmtDateTime } from "@/lib/format";
+import { unnamedLabel } from "@/lib/status";
 import { cn } from "@/lib/utils";
 import { orderState, type OrderKind } from "./orderState";
 
@@ -99,7 +100,7 @@ export const columns = [
         <span className="flex min-w-0 items-baseline gap-2">
           {/* no <Morph> here: the queue holds the same layoutIds, so queue ↔ orders would fly every name */}
           <Link to={`/referrals/${r.referral_id}`} className="min-w-0 truncate font-medium text-fg hover:underline">
-            {r.patient_name ?? <span className="font-normal text-fg-faint">Unknown patient</span>}
+            {r.patient_name ?? <span className="font-normal text-fg-faint">{unnamedLabel(r.status)}</span>}
           </Link>
           {dob && <span className="shrink-0 text-meta text-fg-faint tabular-nums">{dob}</span>}
         </span>

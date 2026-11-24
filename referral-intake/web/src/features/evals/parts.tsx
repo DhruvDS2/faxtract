@@ -1,6 +1,5 @@
 import { useId } from "react";
 import { Code } from "@/components/Code";
-import { AnimatePresence } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -44,21 +43,3 @@ export function Value({ v }: { v: unknown }) {
   return <span className="break-words">{JSON.stringify(v)}</span>;
 }
 
-/**
- * A fresh motion presence scope for one-time reveals.
- *
- * RouteTransition renders the first page after a load under <AnimatePresence initial={false}>,
- * and motion passes that through PresenceContext to every m.* in the page, even ones that
- * mount later: their `initial` is skipped. BarComparison's bars would then start full width
- * and never grow on a direct load of /evals. A nested presence scope (initial allowed) keeps
- * the reveal. Base change request filed; remove this once RouteTransition resets the context.
- */
-export function RevealScope({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
-  return (
-    <AnimatePresence>
-      <div key={id} className={className}>
-        {children}
-      </div>
-    </AnimatePresence>
-  );
-}

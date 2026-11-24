@@ -11,6 +11,7 @@ import { Kbd } from "@/components/ui/kbd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tip } from "@/components/ui/tooltip";
 import { referralLayoutId } from "@/lib/motion";
+import { queueHref } from "@/lib/queueMemory";
 import { cn } from "@/lib/utils";
 import { MOD_KEY } from "./format";
 import type { StatusView } from "./statusView";
@@ -22,7 +23,7 @@ export function useBackToQueue() {
   return () => {
     const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
     if (idx > 0) navigate(-1);
-    else navigate("/queue");
+    else navigate(queueHref());
   };
 }
 
@@ -123,7 +124,7 @@ export function DetailHeader({ id, name, status, flow, graphLink, actions }: Pro
       className="pt-4"
       eyebrow={
         <Link
-          to="/queue"
+          to={queueHref()}
           onClick={(e) => {
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
             e.preventDefault();

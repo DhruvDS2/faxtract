@@ -8,7 +8,7 @@ import { ReferralStatusPill } from "@/components/StatusBadge";
 import { Tip } from "@/components/ui/tooltip";
 import { fmtAge, fmtConfidence, fmtDateTime } from "@/lib/format";
 import { referralLayoutId } from "@/lib/motion";
-import { STATUS_ORDER, confidenceTone, statusText } from "@/lib/status";
+import { STATUS_ORDER, confidenceTone, statusText, unnamedLabel } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 /**
@@ -85,7 +85,7 @@ function useRowTouched(ref: React.RefObject<HTMLElement | null>, armed = false) 
 function PatientName({ row, armed }: { row: QueueRow; armed: boolean }) {
   const ref = useRef<HTMLElement>(null);
   const live = useRowTouched(ref, armed);
-  const name = row.patient_name ?? <span className="font-normal text-fg-faint">Unknown patient</span>;
+  const name = row.patient_name ?? <span className="font-normal text-fg-faint">{unnamedLabel(row.status)}</span>;
   const cls = "min-w-0 truncate group-hover/name:underline";
   return live ? (
     <Morph ref={ref} as="span" layoutId={referralLayoutId(row.id)} className={cls}>
