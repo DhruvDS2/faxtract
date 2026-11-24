@@ -22,5 +22,6 @@ export default defineConfig({
     { name: "design", testMatch: /design-shots\.spec\.ts/, use: { viewport: { width: 1440, height: 900 } } },
     { name: "videos", testMatch: /design-videos\.spec\.ts/, use: { video: { mode: "on", size: { width: 1440, height: 900 } }, viewport: { width: 1440, height: 900 } } },
     { name: "perf", testMatch: /perf\.spec\.ts/, use: { viewport: { width: 1440, height: 900 } } },
+    { name: "states", testMatch: /states\.spec\.ts/, use: { viewport: { width: 1440, height: 900 } } },
   ],
 });
