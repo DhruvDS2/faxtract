@@ -47,10 +47,12 @@ export function GraphPage() {
   useEffect(() => setStepRunning(executions(trace.data ?? []).some((e) => e.status === "running")), [trace.data]);
 
   const isV1 = record.data?.pipeline === "v1";
+  // States need both the record (is it still settling?) and the trace; until then the map waits, unlit.
   const run = useMemo<GraphRun | null>(() => {
-    if (!structure.data || !referralId || isV1 || record.isError) return null;
-    return deriveRun(structure.data, trace.data, record.data?.status);
-  }, [structure.data, referralId, isV1, record.isError, trace.data, record.data?.status]);
+    if (!structure.data || !referralId || isV1 || record.isError || !trace.data || !record.data) return null;
+    return deriveRun(structure.data, trace.data, record.data.status);
+  }, [structure.data, referralId, isV1, record.isError, trace.data, record.data]);
+  const awaiting = !!referralId && !run && !isV1 && !record.isError && !trace.isError;
 
   const setQuery = useCallback(
     (patch: Record<string, string | undefined>) =>
@@ -118,6 +120,7 @@ export function GraphPage() {
             run={run}
             items={referrals.data}
             listFailed={referrals.isError}
+            structureFailed={structure.isError}
             onPick={(id) => setQuery({ referral: id, node: undefined })}
           />
 
@@ -141,6 +144,7 @@ export function GraphPage() {
               <FlowMap
                 structure={structure.data}
                 run={run}
+                awaiting={awaiting}
                 tech={tech}
                 coveredRight={covered}
                 selected={selected}
@@ -168,13 +172,13 @@ export function GraphPage() {
               <div className="shrink-0 border-t border-border">
                 <ErrorState title="Couldn't load the trace" error={trace.error} onRetry={() => void trace.refetch()} align="start" className="py-4" />
               </div>
-            ) : trace.isPending ? (
+            ) : trace.isPending || !run ? (
               <div className="flex h-24 shrink-0 flex-col justify-center gap-2 border-t border-border px-6" aria-busy="true">
                 <Skeleton className="h-2.5 w-24" />
                 <Skeleton className="h-5 w-full" />
               </div>
             ) : (
-              <TraceTimeline executions={run?.executions ?? []} live={live} tech={tech} />
+              <TraceTimeline executions={run.executions} live={live} tech={tech} />
             )
           )}
         </div>
@@ -272,6 +276,7 @@ function Header({
   run,
   items,
   listFailed,
+  structureFailed,
   onPick,
 }: {
   referralId: string | undefined;
@@ -282,6 +287,7 @@ function Header({
   run: GraphRun | null;
   items: ReferralSummary[] | undefined;
   listFailed: boolean;
+  structureFailed: boolean;
   onPick: (id: string | undefined) => void;
 }) {
   const steps = structure?.nodes.filter((n) => n.kind === "node").length ?? 0;
@@ -291,7 +297,13 @@ function Header({
     return (
       <PageHeader
         title="Pick a referral to see the path it took"
-        meta={steps ? `${steps} steps, read from the running pipeline. Click a step to see what it does.` : "Reading the pipeline…"}
+        meta={
+          steps
+            ? `${steps} steps, read from the running pipeline. Click a step to see what it does.`
+            : structureFailed
+              ? "The pipeline map didn't load."
+              : "Reading the pipeline…"
+        }
         actions={picker}
       />
     );

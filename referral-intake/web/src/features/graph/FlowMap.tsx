@@ -12,6 +12,7 @@ import { FlowEdges, type DrawnEdge } from "./FlowEdges";
 import { finding } from "./steps";
 import {
   STEP_H,
+  STEP_H_BARE,
   STEP_H_TECH,
   STEP_W,
   StepNode,
@@ -47,8 +48,10 @@ const easeEnter = bezier(EASE.enter);
 
 export type FlowMapProps = {
   structure: GraphStructure;
-  /** Null: no referral picked (the bare map). */
+  /** Null: no referral picked (the bare map), or its trace is still loading (`awaiting`). */
   run: GraphRun | null;
+  /** A referral is picked but its record or trace hasn't arrived: full-size steps, unlit. */
+  awaiting: boolean;
   tech: boolean;
   /** Width the side panel covers on the right, so the selected step can be kept clear of it. */
   coveredRight: number;
@@ -65,7 +68,8 @@ function edgeText(label: string | null, target: string, tech: boolean) {
   return words && words.toLowerCase() !== stepLabel(target).toLowerCase() ? words : null;
 }
 
-export function FlowMap({ structure, run, tech, coveredRight, selected, onReady, className }: FlowMapProps) {
+export function FlowMap({ structure, run, awaiting, tech, coveredRight, selected, onReady, className }: FlowMapProps) {
+  const stepH = !run && !awaiting ? STEP_H_BARE + (tech ? STEP_H_TECH - STEP_H : 0) : tech ? STEP_H_TECH : STEP_H;
   const layout = useMemo<FlowLayout>(
     () =>
       flowLayout(
@@ -73,7 +77,7 @@ export function FlowMap({ structure, run, tech, coveredRight, selected, onReady,
           id: n.id,
           kind: n.kind,
           width: n.kind === "node" ? STEP_W : TERMINAL_SIZE,
-          height: n.kind === "node" ? (tech ? STEP_H_TECH : STEP_H) : TERMINAL_SIZE,
+          height: n.kind === "node" ? stepH : TERMINAL_SIZE,
         })),
         structure.edges.map((e, i) => ({
           id: `e${i}`,
@@ -82,7 +86,7 @@ export function FlowMap({ structure, run, tech, coveredRight, selected, onReady,
           labelWidth: labelWidth(edgeText(e.label, e.target, tech), tech),
         })),
       ),
-    [structure, tech],
+    [structure, tech, stepH],
   );
 
   const nodes = useMemo(() => {
@@ -112,7 +116,7 @@ export function FlowMap({ structure, run, tech, coveredRight, selected, onReady,
           draggable: false,
           selectable: false,
           focusable: false,
-          data: { id, kind: n.kind, label: TERMINAL_LABEL[n.kind], state, reached, tech },
+          data: { id, kind: n.kind, label: TERMINAL_LABEL[n.kind], state, reached, awaiting, tech },
         });
         continue;
       }
@@ -128,7 +132,7 @@ export function FlowMap({ structure, run, tech, coveredRight, selected, onReady,
         type: "step",
         position,
         width: STEP_W,
-        height: tech ? STEP_H_TECH : STEP_H,
+        height: stepH,
         // React Flow turns pointer events off on nodes it doesn't handle itself; the step handles its own.
         style: { pointerEvents: "all" },
         draggable: false,
@@ -139,6 +143,7 @@ export function FlowMap({ structure, run, tech, coveredRight, selected, onReady,
           label: stepLabel(id),
           state,
           bare: !run,
+          awaiting,
           result,
           resultTone: stoppedHere ? "bad" : f?.tone,
           durationMs,

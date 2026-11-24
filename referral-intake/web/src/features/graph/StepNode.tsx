@@ -11,14 +11,17 @@ import type { NodeState } from "./trace";
 export const STEP_W = 124;
 export const STEP_H = 88; // 8 + two label lines (40) + result (16) + footer (16) + 8
 export const STEP_H_TECH = 106; // + one line of mono (18)
+export const STEP_H_BARE = 56; // no referral: the label only
 export const TERMINAL_SIZE = 12;
 
 export type StepNodeData = {
   id: string;
   label: string;
   state: NodeState;
-  /** No referral picked: just the map. */
+  /** No result to show: no referral picked, or its trace hasn't arrived yet. */
   bare: boolean;
+  /** The referral's trace is still loading: drawn unlit until the reveal. */
+  awaiting: boolean;
   /** One line from the trace: "Member not found", "ACK AA". */
   result: string | null;
   resultTone?: "bad" | "warn";
@@ -41,6 +44,7 @@ export type TerminalNodeData = {
   state: NodeState;
   /** The path taken reaches this mark (not just an end stub elsewhere). */
   reached: boolean;
+  awaiting: boolean;
   tech: boolean;
 };
 export type TerminalFlowNode = Node<TerminalNodeData, "terminal">;
@@ -110,7 +114,7 @@ function StepNodeView({ data }: NodeProps<StepFlowNode>) {
   const isSelected = selected === data.id;
   const isHovered = hovered === data.id;
   const quiet = data.state === "skipped" || (data.state === "idle" && !data.bare);
-  const unlit = reveal.pending && reveal.order.has(data.id);
+  const unlit = data.awaiting || (reveal.pending && reveal.order.has(data.id));
   const delay = revealDelay(reveal, reveal.order.get(data.id));
   const open = () => select(isSelected ? null : data.id);
 
@@ -138,7 +142,7 @@ function StepNodeView({ data }: NodeProps<StepFlowNode>) {
         "group relative flex size-full cursor-pointer flex-col rounded-md border px-2 py-2 text-left select-none",
         "transition-[border-color,background-color,opacity] duration-state ease-enter",
         CARD[data.state],
-        data.bare && "border-solid",
+        data.bare && !data.awaiting && "border-solid",
         isHovered && data.state !== "paused" && data.state !== "error" && "border-control bg-surface-2",
         // Selection is a neutral fill; a paused step keeps its amber and darkens its edge instead.
         isSelected && (data.state === "paused" ? "border-warn" : data.state === "error" ? "border-bad bg-selected" : "border-control bg-selected"),
@@ -152,18 +156,22 @@ function StepNodeView({ data }: NodeProps<StepFlowNode>) {
       <div className={cn("line-clamp-2 min-h-10 text-body font-medium", quiet ? "font-normal text-fg-faint" : "text-fg")}>
         {data.label}
       </div>
-      <div
-        className={cn(
-          "mt-auto h-4 truncate text-meta",
-          data.resultTone === "bad" ? "text-bad" : quiet ? "text-fg-faint" : "text-fg-muted",
-        )}
-        title={data.result ?? undefined}
-      >
-        {data.result}
-      </div>
-      <div className="flex h-4 min-w-0 items-center gap-1 text-meta whitespace-nowrap text-fg-faint tabular-nums">
-        {!data.bare && <Footer data={data} now={now} />}
-      </div>
+      {!data.bare && (
+        <>
+          <div
+            className={cn(
+              "mt-auto h-4 truncate text-meta",
+              data.resultTone === "bad" ? "text-bad" : quiet ? "text-fg-faint" : "text-fg-muted",
+            )}
+            title={data.result ?? undefined}
+          >
+            {data.result}
+          </div>
+          <div className="flex h-4 min-w-0 items-center gap-1 text-meta whitespace-nowrap text-fg-faint tabular-nums">
+            <Footer data={data} now={now} />
+          </div>
+        </>
+      )}
       {data.tech && <code className="mt-0.5 truncate font-mono text-code text-fg-faint">{data.id}</code>}
     </div>
   );
@@ -172,7 +180,7 @@ function StepNodeView({ data }: NodeProps<StepFlowNode>) {
 function TerminalNodeView({ data }: NodeProps<TerminalFlowNode>) {
   const { reveal } = useGraphInteraction();
   const reached = data.reached;
-  const unlit = reveal.pending && reveal.order.has(data.id);
+  const unlit = data.awaiting || (reveal.pending && reveal.order.has(data.id));
   return (
     <div
       data-testid="graph-node"
