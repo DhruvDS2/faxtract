@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-24T01:34:56.411767Z",
-  "git_commit": "ab18836c74de7568feceb467bd2c13082e771aa6",
+  "generated_at": "2026-11-24T01:44:11.147964Z",
+  "git_commit": "bd372b2d67c4f86f78363194d41085b545c2b4c6",
   "threshold": 0.85,
   "corpus": {
     "n": 60,
@@ -129,9 +129,9 @@
       "referral_040.pdf"
     ],
     "latency_ms": {
-      "p50": 0.393,
-      "p95": 2.931,
-      "mean": 1.241,
+      "p50": 0.43,
+      "p95": 4.091,
+      "mean": 1.444,
       "n": 60
     },
     "extraction_latency_ms": {
@@ -144,26 +144,26 @@
     "node_timings_ms": {
       "extract": {
         "p50": 0.095,
-        "p95": 0.221,
-        "mean": 0.14,
+        "p95": 0.181,
+        "mean": 0.108,
         "n": 60
       },
       "validate": {
-        "p50": 0.044,
-        "p95": 0.166,
-        "mean": 0.065,
+        "p50": 0.045,
+        "p95": 0.203,
+        "mean": 0.073,
         "n": 60
       },
       "eligibility": {
-        "p50": 0.081,
-        "p95": 0.194,
-        "mean": 0.149,
+        "p50": 0.076,
+        "p95": 0.237,
+        "mean": 0.102,
         "n": 60
       },
       "send": {
-        "p50": 1.847,
-        "p95": 3.514,
-        "mean": 2.275,
+        "p50": 2.195,
+        "p95": 7.393,
+        "mean": 3.134,
         "n": 19
       }
     }
@@ -185,9 +185,9 @@
       "referral_040.pdf"
     ],
     "latency_ms": {
-      "p50": 53.038,
-      "p95": 100.277,
-      "mean": 56.268,
+      "p50": 56.753,
+      "p95": 122.212,
+      "mean": 68.065,
       "n": 60
     },
     "extraction_latency_ms": {
@@ -199,51 +199,51 @@
     "cost_per_referral_usd": 0.01454,
     "node_timings_ms": {
       "extract": {
-        "p50": 0.121,
-        "p95": 0.25,
-        "mean": 0.147,
+        "p50": 0.115,
+        "p95": 0.169,
+        "mean": 0.124,
         "n": 60
       },
       "validate": {
-        "p50": 0.08,
-        "p95": 0.263,
-        "mean": 0.11,
+        "p50": 0.075,
+        "p95": 0.148,
+        "mean": 0.093,
         "n": 60
       },
       "eligibility": {
-        "p50": 0.186,
-        "p95": 0.314,
-        "mean": 0.224,
+        "p50": 0.17,
+        "p95": 0.366,
+        "mean": 0.196,
         "n": 60
       },
       "auth": {
-        "p50": 0.059,
-        "p95": 0.185,
-        "mean": 0.081,
-        "n": 47
+        "p50": 0.056,
+        "p95": 0.146,
+        "mean": 0.07,
+        "n": 60
       },
       "retrieve": {
-        "p50": 26.308,
-        "p95": 57.12,
-        "mean": 30.549,
-        "n": 33
+        "p50": 26.431,
+        "p95": 56.83,
+        "mean": 43.658,
+        "n": 42
       },
       "packet": {
-        "p50": 6.497,
-        "p95": 10.323,
-        "mean": 6.97,
-        "n": 33
+        "p50": 6.147,
+        "p95": 8.631,
+        "mean": 6.7,
+        "n": 42
       },
       "human_review": {
-        "p50": 0.047,
+        "p50": 0.045,
         "p95": 0.07,
-        "mean": 0.053,
+        "mean": 0.051,
         "n": 41
       },
       "order": {
-        "p50": 1.655,
-        "p95": 4.096,
-        "mean": 1.984,
+        "p50": 1.747,
+        "p95": 3.713,
+        "mean": 1.993,
         "n": 19
       }
     }
@@ -266,10 +266,10 @@
     "Same gate in both pipelines (app.gate.review_reasons): they agree on 60/60 auto-approve decisions, so the comparison is orchestration and retrieval, not rules.",
     "Orders really sent: v1 19 and v2 19 got MSA|AA from the in-process mock RIS (38 orders in its store).",
     "Latency is end to end per referral with replayed extraction and no human time: v1 = process() + gate + MLLP send; v2 = GraphRunner.start() to its pause or end, including the Postgres checkpoint and trace writes, the 3-step RAG and the prior-auth packet PDF that v1 never does. One untimed warm-up run per pipeline first (model load, connection pool).",
-    "Where v2's time goes: the nodes' own work is p50 27.6 ms per referral; the rest (p50 25.5 ms, p95 61.3 ms) is LangGraph bookkeeping plus the Postgres checkpoint after every step and two trace rows per node, i.e. the price of pausable, resumable, inspectable runs. Next to the ~10 s model call it is noise.",
-    "Retrieval latency per query: v1 p50 2.0 ms / p95 4.8 ms, v2 p50 25.9 ms / p95 70.6 ms. Both retrievers get the same referral (the replayed prediction); the expected doc is section 15's payor+CPT policy (app.rag.expected_source).",
+    "Where v2's time goes: the nodes' own work is p50 30.5 ms per referral; the rest (p50 27.6 ms, p95 55.5 ms) is LangGraph bookkeeping plus the Postgres checkpoint after every step and two trace rows per node, i.e. the price of pausable, resumable, inspectable runs. Next to the ~10 s model call it is noise.",
+    "Retrieval latency per query: v1 p50 1.9 ms / p95 4.7 ms, v2 p50 24.7 ms / p95 89.1 ms. Both retrievers get the same referral (the replayed prediction); the expected doc is section 15's payor+CPT policy (app.rag.expected_source).",
     "Hit@1 misses: v1 with CPT ['referral_004.pdf', 'referral_009.pdf', 'referral_054.pdf'], v1 without CPT ['referral_001.pdf', 'referral_004.pdf', 'referral_009.pdf', 'referral_010.pdf', 'referral_013.pdf', 'referral_019.pdf', 'referral_023.pdf', 'referral_034.pdf', 'referral_041.pdf', 'referral_043.pdf', 'referral_054.pdf', 'referral_059.pdf']; v2 with CPT [], v2 without CPT ['referral_010.pdf', 'referral_023.pdf', 'referral_041.pdf', 'referral_049.pdf', 'referral_059.pdf'].",
-    "The served graph only retrieves when prior auth is required (33/60 referrals); its top citation matches the direct retrieve_3step call on 33/33.",
+    "The served graph only retrieves when prior auth is required (42/60 referrals); its top citation matches the direct retrieve_3step call on 42/42.",
     "The earlier '3 false approvals' claim used validate() alone, with pre-fix truth: that narrow gate auto-approves 59/60 and falsely approves 3 (referral_013.pdf, referral_040.pdf, referral_058.pdf). The full gate (validation + eligibility + prior-auth elements) auto-approves 19 and falsely approves 1 under the same pre-fix truth (referral_040.pdf). The others are held for coverage or prior-auth reasons, not because the gate noticed the wrong value.",
     "False approvals by truth version (v1 / v2): as_printed 1 / 1; pre_fix 1 / 1; post_fix 4 / 4. post_fix scores the stale replays of reprinted pages against values those pages never showed, so it overstates errors; as_printed is the headline.",
     "Cost per referral is the recorded Claude token usage x app.contracts.PRICE_PER_MTOK; v2 adds no model calls (its step-2 keyword extractor is deterministic), so both pipelines cost the same."
