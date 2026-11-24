@@ -3,11 +3,10 @@ import { Link } from "react-router-dom";
 import { createColumnHelper } from "@tanstack/react-table";
 import type { ReferralSummary, RisOrderRow } from "@/contracts";
 import { Code } from "@/components/Code";
-import { Morph } from "@/components/Morph";
 import { StatusPill } from "@/components/StatusPill";
 import { Tip } from "@/components/ui/tooltip";
 import { fmtAge, fmtDateTime } from "@/lib/format";
-import { fade, m, referralLayoutId } from "@/lib/motion";
+import { fade, m } from "@/lib/motion";
 import { orderState, type OrderKind } from "./orderState";
 
 /** An order row; `sortAt` holds a retried row in its place while the page is open. */
@@ -68,11 +67,10 @@ export const columns = [
       const dob = referrals.get(r.referral_id)?.patient_dob;
       return (
         <span className="flex min-w-0 items-baseline gap-2">
-          <Morph as="span" layoutId={referralLayoutId(r.referral_id)} className="min-w-0 truncate font-medium text-fg">
-            <Link to={`/referrals/${r.referral_id}`} className="hover:underline">
-              {r.patient_name ?? <span className="font-normal text-fg-faint">Unknown patient</span>}
-            </Link>
-          </Morph>
+          {/* no <Morph> here: the queue holds the same layoutIds, so queue ↔ orders would fly every name */}
+          <Link to={`/referrals/${r.referral_id}`} className="min-w-0 truncate font-medium text-fg hover:underline">
+            {r.patient_name ?? <span className="font-normal text-fg-faint">Unknown patient</span>}
+          </Link>
           {dob && <span className="shrink-0 text-meta text-fg-faint tabular-nums">{dob}</span>}
         </span>
       );

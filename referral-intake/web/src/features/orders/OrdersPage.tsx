@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ReferralSummary, RisOrderRow } from "@/contracts";
 import { useHealth, useOrders, useReferrals } from "@/api/queries";
@@ -9,6 +9,7 @@ import { StatusLine } from "@/components/StatusLine";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DURATION_MS, STAGGER, STAGGER_MAX_ITEMS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { columns, type OrderRow, type OrdersTableMeta } from "./columns";
 import { headline, isUnacknowledged, metaLine } from "./orderState";
@@ -21,6 +22,9 @@ const VIEW_PARAM = "show";
 /** Fixed layout (header cells carry the widths, Study takes the rest); first and last columns on the page gutter. */
 const TABLE_LAYOUT =
   "[&_table]:table-fixed [&_th:last-child]:w-28 [&_td:first-child]:pl-6 [&_th:first-child]:pl-6 [&_td:last-child]:pr-6 [&_th:last-child]:pr-6";
+
+/** After the first progressive fill, rows that appear later (switching tabs) show at once. */
+const REVEAL_WINDOW_MS = STAGGER.row * STAGGER_MAX_ITEMS * 1000 + DURATION_MS.state;
 
 const clock = (t: number) => new Date(t).toTimeString().slice(0, 5);
 
@@ -59,6 +63,14 @@ export function OrdersPage() {
     const shown = view === "unacknowledged" ? all.filter((r) => isUnacknowledged(r) || r.referral_id in pinned) : all;
     return shown.map((r) => (r.referral_id in pinned ? { ...r, sortAt: pinned[r.referral_id] } : r));
   }, [all, view, pinned]);
+
+  // progressive fill once per visit (Paradigm)
+  const [filled, setFilled] = useState(false);
+  useEffect(() => {
+    if (orders.isPending || filled) return;
+    const t = window.setTimeout(() => setFilled(true), REVEAL_WINDOW_MS);
+    return () => window.clearTimeout(t);
+  }, [orders.isPending, filled]);
 
   const byId = useMemo(() => new Map<string, ReferralSummary>((referrals.data ?? []).map((r) => [r.id, r])), [referrals.data]);
   const meta = useMemo<OrdersTableMeta>(() => ({ now, sending, referrals: byId }), [now, sending, byId]);
@@ -152,7 +164,7 @@ export function OrdersPage() {
           testId="orders-table"
           rowTestId="order-row"
           label="RIS orders"
-          rowProps={(row) => ({ "data-status": row.original.status })}
+          rowProps={(row) => ({ "data-status": row.original.status, className: filled ? "animate-none" : undefined })}
           loading={orders.isPending}
           loadingRows={8}
           error={orders.isError && !orders.data ? orders.error : undefined}
