@@ -1,84 +1,92 @@
-import type { ColumnDef, FilterFn, SortingFn, SortingState } from "@tanstack/react-table";
-import { CircleX, TriangleAlert } from "lucide-react";
+import { useRef } from "react";
 import { Link } from "react-router-dom";
+import type { ColumnDef, SortingFn, SortingState } from "@tanstack/react-table";
 import type { ReferralStatus, ReferralSummary } from "@/contracts";
 import { Code } from "@/components/Code";
-import { Confidence } from "@/components/Confidence";
-import { AckBadge, StatusBadge } from "@/components/StatusBadge";
+import { ConfidenceMeter } from "@/components/Confidence";
+import { Morph } from "@/components/Morph";
+import { ReferralStatusPill } from "@/components/StatusBadge";
 import { Tip } from "@/components/ui/tooltip";
 import { fmtAge, fmtDateTime } from "@/lib/format";
-import { STATUS_ORDER } from "@/lib/status";
+import { fade, m, referralLayoutId } from "@/lib/motion";
+import { STATUS_ORDER, statusText } from "@/lib/status";
 
-/** Table meta: the clock used for relative ages, so the column re-renders as time passes. */
-export type QueueTableMeta = { now: number };
+/**
+ * A queue row. `sortStatus` holds a row in its place while an action on it settles
+ * (a retry that turns "RIS error" into "Sent" changes the row, it doesn't move it).
+ */
+export type QueueRow = ReferralSummary & { sortStatus?: ReferralStatus };
+
+/** Table meta: the clock for relative ages, and what a row click does. */
+export type QueueTableMeta = { now: number; onOpen: (id: string) => void };
 
 const statusRank = (s: ReferralStatus) => {
   const i = STATUS_ORDER.indexOf(s);
   return i === -1 ? STATUS_ORDER.length : i;
 };
+const rowStatus = (r: QueueRow) => r.sortStatus ?? r.status;
+/** Work order: the status order from lib/status, then the least confident extraction first. */
+const byWork: SortingFn<QueueRow> = (a, b) =>
+  statusRank(rowStatus(a.original)) - statusRank(rowStatus(b.original)) ||
+  (a.original.min_confidence ?? Infinity) - (b.original.min_confidence ?? Infinity);
 
-const byStatus: SortingFn<ReferralSummary> = (a, b) => statusRank(a.original.status) - statusRank(b.original.status);
+/** The default order is one sort (status, with confidence as the tie-break), so the header shows one arrow. */
+export const DEFAULT_SORT: SortingState = [{ id: "status", desc: false }];
 
-/** Exact match; the sentinel NO_PAYOR matches rows with no payor. */
+/** The payor filter value for referrals with no payor read. */
 export const NO_PAYOR = "__none__";
-const exact: FilterFn<ReferralSummary> = (row, id, value) =>
-  value === NO_PAYOR ? row.getValue(id) === undefined : row.getValue(id) === value;
-
-/** Work first: the status order from lib/status, then the least confident extraction. */
-export const DEFAULT_SORT: SortingState = [
-  { id: "status", desc: false },
-  { id: "confidence", desc: false },
-];
 
 const Dash = () => <span className="text-fg-faint">-</span>;
 
-/** Per-column cell/header classes (alignment and widths), keyed by column id. */
-export const COLUMN_CLASS: Record<string, string> = {
-  patient: "",
-  cpt: "",
-  payor: "w-40",
-  confidence: "w-28 text-right",
-  status: "w-36",
-  flags: "w-20",
-  ack: "w-16",
-  age: "w-20 text-right",
-};
+/** A status that changed while on screen fades to its new text (200 ms); first paint is still. */
+function StatusCell({ row }: { row: QueueRow }) {
+  const label = statusText(row.status, row.ack_code).label;
+  const first = useRef(label);
+  return (
+    <m.span key={label} className="flex min-w-0" variants={fade} initial={label === first.current ? false : "initial"} animate="animate">
+      <ReferralStatusPill status={row.status} ack={row.ack_code} />
+    </m.span>
+  );
+}
 
-export const columns: ColumnDef<ReferralSummary>[] = [
+export const columns: ColumnDef<QueueRow>[] = [
   {
     id: "patient",
     header: "Patient",
     accessorFn: (r) => r.patient_name ?? undefined,
     sortUndefined: "last",
-    cell: ({ row }) => {
+    meta: { truncate: true, className: "w-60", headClassName: "w-60", skeleton: "w-40" },
+    cell: ({ row, table }) => {
       const r = row.original;
+      const open = (table.options.meta as QueueTableMeta).onOpen;
       return (
-        <div className="flex min-w-0 items-baseline gap-2">
-          <Link
-            to={`/referrals/${r.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="truncate font-medium text-fg hover:underline"
-          >
-            {r.patient_name ?? <span className="font-normal text-fg-faint">Unknown patient</span>}
-          </Link>
-          {r.patient_dob && <span className="shrink-0 text-xs text-fg-faint tabular-nums">{r.patient_dob}</span>}
-        </div>
+        <span className="flex min-w-0 items-baseline gap-2">
+          {/* ONTO: the name grows into the referral header (Lane B wraps the target) */}
+          <Morph as="span" layoutId={referralLayoutId(r.id)} className="min-w-0 truncate font-medium text-fg">
+            <Link to={`/referrals/${r.id}`} onClick={() => open(r.id)} className="hover:underline">
+              {r.patient_name ?? <span className="font-normal text-fg-faint">Unknown patient</span>}
+            </Link>
+          </Morph>
+          {r.patient_dob && <span className="shrink-0 text-meta text-fg-faint tabular-nums">{r.patient_dob}</span>}
+        </span>
       );
     },
   },
   {
-    id: "cpt",
-    header: "CPT",
+    id: "study",
+    header: "Study",
     accessorFn: (r) => r.cpt_code ?? undefined,
     sortUndefined: "last",
+    meta: { skeleton: "w-48" },
     cell: ({ row }) => {
       const r = row.original;
-      if (!r.cpt_code) return <Dash />;
+      if (!r.cpt_code && !r.requested_study) return <Dash />;
+      const title = [r.cpt_code, r.requested_study].filter(Boolean).join(" · ");
       return (
-        <div className="flex min-w-0 items-baseline gap-2">
-          <Code className="shrink-0">{r.cpt_code}</Code>
+        <span className="flex min-w-0 items-baseline gap-2" title={title}>
+          {r.cpt_code ? <Code className="shrink-0 text-fg">{r.cpt_code}</Code> : <Dash />}
           {r.requested_study && <span className="truncate text-fg-muted">{r.requested_study}</span>}
-        </div>
+        </span>
       );
     },
   },
@@ -87,71 +95,38 @@ export const columns: ColumnDef<ReferralSummary>[] = [
     header: "Payor",
     accessorFn: (r) => r.payor_name ?? undefined,
     sortUndefined: "last",
-    filterFn: exact,
-    cell: ({ row }) => (row.original.payor_name ? <span className="block truncate">{row.original.payor_name}</span> : <Dash />),
+    meta: { truncate: true, className: "w-40", headClassName: "w-40", skeleton: "w-24" },
+    cell: ({ row }) => row.original.payor_name ?? <Dash />,
   },
   {
     id: "confidence",
     header: "Confidence",
     accessorFn: (r) => r.min_confidence ?? undefined,
     sortUndefined: "last",
-    cell: ({ row }) =>
-      row.original.min_confidence == null ? <Dash /> : <Confidence value={row.original.min_confidence} />,
+    meta: { numeric: true, className: "w-24", headClassName: "w-24", skeleton: "w-8" },
+    // a plain number: faint at or above the server's threshold, toned below it
+    cell: ({ row }) => (row.original.min_confidence == null ? <Dash /> : <ConfidenceMeter value={row.original.min_confidence} quiet />),
   },
   {
     id: "status",
     header: "Status",
-    accessorFn: (r) => r.status,
-    sortingFn: byStatus,
-    filterFn: exact,
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    accessorFn: (r) => rowStatus(r),
+    sortingFn: byWork,
+    meta: { className: "w-44", headClassName: "w-44", skeleton: "w-24" },
+    // the ACK is folded in ("Sent to RIS · AA", "RIS rejected · AE"): no Flags or ACK columns
+    cell: ({ row }) => <StatusCell row={row.original} />,
   },
   {
-    id: "flags",
-    header: "Flags",
-    accessorFn: (r) => r.error_count * 1000 + r.warning_count,
-    sortDescFirst: true,
-    cell: ({ row }) => {
-      const { error_count: e, warning_count: w } = row.original;
-      if (!e && !w) return <Dash />;
-      const label = [e && `${e} error${e === 1 ? "" : "s"}`, w && `${w} warning${w === 1 ? "" : "s"}`].filter(Boolean).join(", ");
-      return (
-        <Tip content={label}>
-          <span className="inline-flex items-center gap-2 tabular-nums" aria-label={label}>
-            {e > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-bad">
-                <CircleX className="size-3.5" aria-hidden />
-                {e}
-              </span>
-            )}
-            {w > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-warn">
-                <TriangleAlert className="size-3.5" aria-hidden />
-                {w}
-              </span>
-            )}
-          </span>
-        </Tip>
-      );
-    },
-  },
-  {
-    id: "ack",
-    header: "ACK",
-    accessorFn: (r) => r.ack_code ?? undefined,
-    sortUndefined: "last",
-    cell: ({ row }) => (row.original.ack_code ? <AckBadge code={row.original.ack_code} /> : <Dash />),
-  },
-  {
-    id: "age",
-    header: "Age",
-    // Ascending age = newest first.
+    id: "received",
+    header: "Received",
+    // ascending = newest first
     accessorFn: (r) => -Date.parse(r.created_at),
+    meta: { numeric: true, className: "w-20", headClassName: "w-20", skeleton: "w-12" },
     cell: ({ row, table }) => {
-      const now = (table.options.meta as QueueTableMeta | undefined)?.now ?? Date.now();
+      const now = (table.options.meta as QueueTableMeta).now;
       return (
         <Tip content={`Received ${fmtDateTime(row.original.created_at)}`}>
-          <span className="text-fg-muted tabular-nums">{fmtAge(row.original.created_at, now)}</span>
+          <span className="text-fg-muted">{fmtAge(row.original.created_at, now)}</span>
         </Tip>
       );
     },
