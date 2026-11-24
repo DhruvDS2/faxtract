@@ -707,7 +707,7 @@ def cmd_bootstrap(_args) -> int:
     return 0
 
 
-def cmd_test(args) -> int:
+def cmd_test(pytest_args: list[str]) -> int:
     url = os.environ.get("TEST_DATABASE_URL", "").strip()
     started = False
     if not url:
@@ -716,7 +716,7 @@ def cmd_test(args) -> int:
         url = f"postgresql+psycopg://postgres@{HOST}:{PG_PORT}/postgres"
     say(f"TEST_DATABASE_URL={redact(url)}")
     try:
-        rc = subprocess.call([sys.executable, "-m", "pytest", *args.pytest_args], cwd=ROOT,
+        rc = subprocess.call([sys.executable, "-m", "pytest", *pytest_args], cwd=ROOT,
                              env={**os.environ, "TEST_DATABASE_URL": url})
     finally:
         if started:
@@ -741,8 +741,16 @@ def main(argv=None) -> int:
     sub.add_parser("pg-stop")
     sub.add_parser("pg-url")
     sub.add_parser("bootstrap", help="bootstrap DATABASE_URL, or the demo Postgres if unset")
-    t = sub.add_parser("test", help="pytest against TEST_DATABASE_URL, or the demo Postgres")
-    t.add_argument("pytest_args", nargs=argparse.REMAINDER)
+    sub.add_parser("test", help="pytest against TEST_DATABASE_URL, or the demo Postgres; "
+                                "everything after `test` goes to pytest")
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if argv[:1] == ["test"]:  # pass the rest to pytest verbatim (argparse would eat -q, -k ...)
+        set_ports(**{**DEFAULT_PORTS, **load_state().get("ports", {})})
+        try:
+            return cmd_test(argv[1:])
+        except DemoError as exc:
+            print(f"demo: {exc}", file=sys.stderr, flush=True)
+            return 1
     args = ap.parse_args(argv)
     state = load_state()
     chosen = {**DEFAULT_PORTS, **state.get("ports", {})}
@@ -751,7 +759,7 @@ def main(argv=None) -> int:
         chosen.update({k: getattr(args, f"{k}_port") for k in DEFAULT_PORTS if getattr(args, f"{k}_port")})
     set_ports(**chosen)
     fn = {"up": cmd_up, "stop": cmd_stop, "status": cmd_status, "clean": cmd_clean, "pg-up": cmd_pg_up, "pg-stop": cmd_pg_stop,
-          "pg-url": cmd_pg_url, "bootstrap": cmd_bootstrap, "test": cmd_test}[args.cmd]
+          "pg-url": cmd_pg_url, "bootstrap": cmd_bootstrap}[args.cmd]
     try:
         return fn(args)
     except DemoError as exc:
