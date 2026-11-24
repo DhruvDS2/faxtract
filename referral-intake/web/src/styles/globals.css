@@ -340,15 +340,15 @@
 }
 
 /*
- * Shared-element navigation: the incoming page is opaque at once so the morphing
- * element stays visible; everything beside the path to it fades in after the
- * outgoing page has left (each branch once, so opacities never compound).
+ * Shared-element arrival (lib/morph.ts tags these once per morph, so no :has() runs on
+ * every style recalc): the page beside the flying name fades in after the outgoing page
+ * has left (120 ms; the name is ~2/3 home by then); the name's parent doesn't clip it.
  */
-[data-route-morph] > :not([data-morph]):not(:has([data-morph])),
-[data-route-morph] :has([data-morph]) > :not([data-morph]):not(:has([data-morph])) {
-  /* starts as the outgoing page finishes leaving (120 ms): the name is ~2/3 home by then (enter curve).
-     A longer delay (tried: 200 ms) left the screen blank between the two pages. */
+[data-morph-fade] {
   animation: fade-in var(--dur-state) var(--ease-enter) var(--dur-fast) both;
+}
+[data-morph-unclip] {
+  overflow: visible !important;
 }
 
 /* reduced motion: every transform distance is zero, so CSS motion is opacity only */

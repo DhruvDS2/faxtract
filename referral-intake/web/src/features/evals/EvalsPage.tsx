@@ -1,4 +1,5 @@
 import { useBenchmark, useExtractionEval } from "@/api/queries";
+import { useAfterTransitions } from "@/lib/motion";
 import { BarsSkeleton, BenchmarkBars, BenchmarkHeader, BenchmarkStats, StatsSkeleton } from "./Benchmark";
 import { isNotFound } from "./copy";
 import { FalseApprovals } from "./FalseApprovals";
@@ -23,6 +24,8 @@ export function EvalsPage() {
   const bench = useBenchmark();
   const extraction = useExtractionEval();
   const report = bench.data?.data;
+  // below the fold: mount after the route crossfade, so its render stays out of the transition
+  const later = useAfterTransitions();
   const model = report && typeof report.extraction.model === "string" ? report.extraction.model : null;
   const retryFailed = () => {
     if (bench.isError) void bench.refetch();
@@ -46,16 +49,19 @@ export function EvalsPage() {
         ) : null}
       </div>
 
-      {report && <FalseApprovals report={report} />}
+      {later && report && <FalseApprovals report={report} />}
 
-      <FieldAccuracy
-        query={extraction}
-        critical={report?.critical_fields ?? []}
-        modelHint={model}
-        retryInHeader={bench.isError && !isNotFound(bench.error)}
-      />
+      {later && (
+        <FieldAccuracy
+          query={extraction}
+          critical={report?.critical_fields ?? []}
+          modelHint={model}
+          retryInHeader={bench.isError && !isNotFound(bench.error)}
+        />
+      )}
 
-      {report && <MethodDetails report={report} />}
+      {later && report && <MethodDetails report={report} />}
+      {!later && <div className="flex-1" aria-busy="true" />}
 
       <Provenance bench={bench} extraction={extraction} />
     </div>

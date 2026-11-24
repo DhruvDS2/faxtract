@@ -9,7 +9,7 @@
  *   except a one-time reveal (600 ms).
  * - prefers-reduced-motion: everything becomes an opacity fade (useMotionPrefs).
  */
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion, type Transition, type Variants } from "motion/react";
 
 export { AnimatePresence, LayoutGroup, m, useInView, useIsPresent } from "motion/react";
@@ -53,7 +53,7 @@ export const fade: Variants = {
  * Route-level crossfade (V7), 320 ms in all: the outgoing page fades out (120 ms,
  * exit curve), then the incoming one fades in (200 ms, enter curve). No overlap of
  * two pages' text. `morph`: the incoming page is shown at once because a shared
- * element is flying into it; its other content fades in via [data-route-morph] (CSS).
+ * element is flying into it; its other content fades in via [data-morph-fade] (lib/morph.ts).
  */
 export const crossfade: Variants = {
   initial: { opacity: 0 },
@@ -189,4 +189,41 @@ export function useTransitionMarker() {
     }),
     [start, stop],
   );
+}
+
+/**
+ * False while a transition window is open (or about to open on this navigation), true
+ * once it has closed. For content below the fold: mounting it after the crossfade keeps
+ * its render and style work out of the transition (QA measures long tasks there).
+ */
+export function useAfterTransitions(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const el = document.documentElement;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      obs.disconnect();
+      window.clearTimeout(cap);
+      window.clearTimeout(first);
+      setReady(true);
+    };
+    const obs = new MutationObserver(() => {
+      if (el.dataset.transitioning !== "true") finish();
+    });
+    obs.observe(el, { attributes: true, attributeFilter: ["data-transitioning"] });
+    // the route's animations start a frame after mount: look then, and never wait past the cap
+    const first = window.setTimeout(() => {
+      if (el.dataset.transitioning !== "true") finish();
+    }, DURATION_MS.fast);
+    const cap = window.setTimeout(finish, SAFETY_MS);
+    return () => {
+      done = true;
+      obs.disconnect();
+      window.clearTimeout(cap);
+      window.clearTimeout(first);
+    };
+  }, []);
+  return ready;
 }

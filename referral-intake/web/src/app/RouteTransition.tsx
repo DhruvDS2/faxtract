@@ -3,6 +3,7 @@ import { PresenceContext, animate } from "motion/react";
 import { UNSAFE_LocationContext, useLocation, useOutlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, DURATION_MS, crossfade, m, useIsPresent, useMotionPrefs, useTransitionMarker } from "@/lib/motion";
+import { sharedMorphTargets, tagMorphArrival } from "@/lib/morph";
 
 /** Pages are keyed by pathname: query-string changes (filters, ?referral=) don't crossfade. */
 export const routeKey = (pathname: string) => pathname.replace(/\/+$/, "") || "/";
@@ -12,7 +13,7 @@ export const routeKey = (pathname: string) => pathname.replace(/\/+$/, "") || "/
  * fades in (200 ms); the nav never moves. Both pages sit in the same box, so a
  * shared element (<Morph>) can travel from one to the other: when the incoming page
  * mounts a [data-morph] that the outgoing page also has, the incoming page shows at
- * once (data-route-morph) and only its other content fades in.
+ * once (data-route-morph) and only its other content fades in (lib/morph.ts tags it).
  * The outgoing page keeps the location it was rendered with, so its hooks don't see
  * the next route while it fades.
  */
@@ -28,22 +29,8 @@ export function RouteTransition() {
   );
 }
 
-/**
- * While a shared element flies in, its direct parent doesn't clip it: the page
- * header's title truncates (overflow hidden), which hid the name for the whole
- * flight. Once the window ends (data-route-morph goes), the ellipsis is back.
- * Keep morph targets out of scrolling panes: those still clip.
- */
-const MORPH_UNCLIP = "data-[route-morph]:[&_:has(>[data-morph])]:overflow-visible";
-
-/** Does this page contain a [data-morph] that a leaving page also contains? */
-function sharesMorph(el: HTMLElement) {
-  const leaving = [...(el.parentElement?.children ?? [])].filter((c) => c !== el && c.getAttribute("data-present") === null);
-  if (!leaving.length) return false;
-  return [...el.querySelectorAll<HTMLElement>("[data-morph]")].some((t) =>
-    leaving.some((l) => l.querySelector(`[data-morph="${CSS.escape(t.dataset.morph ?? "")}"]`)),
-  );
-}
+/** The pages still fading out beside this one. */
+const leavingPages = (el: HTMLElement) => [...(el.parentElement?.children ?? [])].filter((c) => c !== el && c.getAttribute("data-present") === null);
 
 /**
  * `<AnimatePresence initial={false}>` skips the first page's own fade on a hard load,
@@ -71,11 +58,21 @@ function RoutePage({ children }: { children: React.ReactNode }) {
 
   // before first paint: is a shared element arriving from the page that's leaving?
   useLayoutEffect(() => {
-    if (reduce || !ref.current || !sharesMorph(ref.current)) return;
+    if (reduce || !ref.current) return;
+    const targets = sharedMorphTargets(ref.current, leavingPages(ref.current));
+    if (!targets.length) return;
     morphing.current = true;
     setMorph(true);
-    const t = window.setTimeout(() => setMorph(false), DURATION_MS.panel + DURATION_MS.state);
-    return () => window.clearTimeout(t);
+    // tag what fades in and what mustn't clip (attributes, not :has() selectors)
+    const untag = tagMorphArrival(ref.current, targets);
+    const t = window.setTimeout(() => {
+      setMorph(false);
+      untag();
+    }, DURATION_MS.panel + DURATION_MS.state);
+    return () => {
+      window.clearTimeout(t);
+      untag();
+    };
     // only on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -97,7 +94,7 @@ function RoutePage({ children }: { children: React.ReactNode }) {
         data-route-morph={morph ? "" : undefined}
         aria-hidden={present ? undefined : true}
         inert={!present}
-        className={cn("absolute inset-0 overflow-auto", !present && "pointer-events-none", MORPH_UNCLIP)}
+        className={cn("absolute inset-0 overflow-auto", !present && "pointer-events-none")}
         variants={crossfade}
         initial="initial"
         animate={morph ? "morph" : "animate"}
