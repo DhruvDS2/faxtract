@@ -346,6 +346,8 @@
  */
 [data-route-morph] > :not([data-morph]):not(:has([data-morph])),
 [data-route-morph] :has([data-morph]) > :not([data-morph]):not(:has([data-morph])) {
+  /* starts as the outgoing page finishes leaving (120 ms): the name is ~2/3 home by then (enter curve).
+     A longer delay (tried: 200 ms) left the screen blank between the two pages. */
   animation: fade-in var(--dur-state) var(--ease-enter) var(--dur-fast) both;
 }
 

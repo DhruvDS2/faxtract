@@ -276,7 +276,11 @@ export function DataTableView<T>({
                 )}
               >
                 {meta?.truncate ? (
-                  <div className="truncate" title={typeof value === "string" || typeof value === "number" ? String(value) : undefined}>
+                  // a shared element (<Morph>) inside must not be clipped while it flies in; it truncates itself
+                  <div
+                    className="truncate has-[[data-morph]]:overflow-visible"
+                    title={typeof value === "string" || typeof value === "number" ? String(value) : undefined}
+                  >
                     {content}
                   </div>
                 ) : (
