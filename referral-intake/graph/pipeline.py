@@ -1,17 +1,23 @@
 """v2 pipeline as a LangGraph: the nodes, their routing, and build_graph().
 
-    START -> extract -> validate -> eligibility --active--> auth --auth required--> retrieve -> packet
-                 |                      |                    |--auto--> order               |--auto--> order
-               failed                inactive                '--review--> human_review      '--review--> human_review
-                 v                      v
-                END               human_review --approve--> order --sent--> END
-                                       |--edit--> validate (re-check everything, pause again)
-                                       '--reject--> reject -> END
-                                  order --ris error--> ris_wait --retry--> order (attempt + 1)
-                                                               '--reject--> reject
+    START -> extract -> validate -> eligibility -> auth --auth required--> retrieve -> packet
+                 |                                    |--auto--> order                 |--auto--> order
+               failed                                 '--review--> human_review        '--review--> human_review
+                 v
+                END         human_review --approve--> order --sent--> END
+                                 |--edit--> validate (re-check everything, pause again)
+                                 '--reject--> reject -> END
+                            order --ris error--> ris_wait --retry--> order (attempt + 1)
+                                                         '--reject--> reject
+
+Coverage is checked and prior auth is worked out (policy retrieval + packet when
+required) for every referral, active coverage or not (v1 also always computes
+both), so a reviewer always sees the auth requirement and the record lists every
+reason the gate found.
 
 The gate (app.gate.review_reasons) is the same rule v1 uses: no validation
-flags at the threshold, coverage active, no missing prior-auth elements. A
+flags at the threshold, coverage active, no missing prior-auth elements; it is
+applied after auth (or after packet when auth is required). A
 referral a reviewer has edited never auto-sends; it pauses for approval.
 
 human_review and ris_wait pause with langgraph.types.interrupt(); the
@@ -44,7 +50,6 @@ from graph.tracing import traced
 ROOT = Path(__file__).parent.parent
 PACKETS = ROOT / "packets"
 
-ACTIVE = ("active_in_network", "active_out_of_network")
 SEND_TIMEOUT_S = 10.0
 RETRIEVE_K = 3
 
@@ -98,12 +103,7 @@ def validate_node(state: GraphState) -> dict:
 
 def eligibility_node(state: GraphState) -> dict:
     elig = parse_271(respond(build_270(referral_of(state), CLINIC_NPI)))
-    out = {"eligibility": dump(elig)}
-    if elig.status not in ACTIVE:
-        # Inactive coverage goes straight to review; drop any auth/packet work
-        # from an earlier pass so the record describes this pass only.
-        out.update(auth=None, citations=[], keywords=[], packet_path=None)
-    return out
+    return {"eligibility": dump(elig)}
 
 
 def auth_node(state: GraphState) -> dict:
@@ -203,11 +203,6 @@ def route_extract(state) -> str:
     return "failed" if state.get("status") == "failed" else "ok"
 
 
-def route_eligibility(state) -> str:
-    e = state.get("eligibility") or {}
-    return "active" if e.get("status") in ACTIVE else "inactive"
-
-
 def route_auth(state) -> str:
     if (state.get("auth") or {}).get("required"):
         return "auth required"
@@ -232,14 +227,13 @@ def route_ris_wait(state) -> str:
 
 PATHS = {
     "extract": (route_extract, {"ok": "validate", "failed": END}),
-    "eligibility": (route_eligibility, {"active": "auth", "inactive": "human_review"}),
     "auth": (route_auth, {"auth required": "retrieve", "auto": "order", "review": "human_review"}),
     "packet": (route_packet, {"auto": "order", "review": "human_review"}),
     "human_review": (route_review, {"approve": "order", "edit": "validate", "reject": "reject"}),
     "order": (route_order, {"sent": END, "ris error": "ris_wait"}),
     "ris_wait": (route_ris_wait, {"retry": "order", "reject": "reject"}),
 }
-EDGES = {"validate": "eligibility", "retrieve": "packet", "reject": END}
+EDGES = {"validate": "eligibility", "eligibility": "auth", "retrieve": "packet", "reject": END}
 
 
 # --------------------------------------------------------------------------

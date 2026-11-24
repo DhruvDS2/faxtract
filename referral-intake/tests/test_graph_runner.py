@@ -151,6 +151,26 @@ def test_edit_revalidates_and_pauses_again(graph_db, ris_server, corpus):
     assert stored["patient_first_name"] == "Clara"
 
 
+def test_inactive_coverage_still_works_out_prior_auth(graph_db, indexed, corpus):
+    """referral_013: coverage not found, Northgate CT abdomen/pelvis. Same reasons as v1:
+    the auth requirement, the policy citations and the packet are all there for the reviewer."""
+    from app import rag
+
+    record = start(service.GraphRunner(), corpus, "referral_013")
+    assert record.status == "needs_review"
+    assert record.eligibility.status == "not_found"
+    assert record.auth is not None and record.auth.required
+    assert record.review_reasons[0] == "eligibility: not found"
+    assert any(r.startswith("prior auth: missing prior_imaging") for r in record.review_reasons)
+    assert record.citations and record.citations[0].source == rag.expected_source(
+        record.referral.payor_name, record.referral.cpt_code)
+    assert record.packet_available
+
+    events = [e for e in trace.list_for(record.id) if e.status != "running"]
+    assert [e.node for e in events] == ["extract", "validate", "eligibility", "auth", "retrieve",
+                                        "packet", "human_review"]
+
+
 def test_reject_ends_rejected(graph_db, corpus):
     runner = service.GraphRunner()
     record = start(runner, corpus, "referral_058")  # coverage terminated

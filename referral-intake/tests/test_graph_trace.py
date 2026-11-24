@@ -46,7 +46,8 @@ def test_each_call_is_its_own_run_and_the_pause_reads_right(run_013):
 
     first = [(e.node, e.status, e.branch) for e in events if e.run_id == runs[0] and e.status != "running"]
     assert first == [("extract", "ok", "validate"), ("validate", "ok", "eligibility"),
-                     ("eligibility", "ok", "human_review"), ("human_review", "interrupted", None)]
+                     ("eligibility", "ok", "auth"), ("auth", "ok", "retrieve"), ("retrieve", "ok", "packet"),
+                     ("packet", "ok", "human_review"), ("human_review", "interrupted", None)]
     second = [(e.node, e.status, e.branch) for e in events if e.run_id == runs[1] and e.status != "running"]
     assert second == [("human_review", "ok", "order"), ("order", "ok", "__end__")]
 

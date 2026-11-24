@@ -37,7 +37,8 @@ def test_conditional_edges_are_labelled_with_their_branch():
     assert edges[("human_review", "reject")].label == "reject"
     assert edges[("auth", "retrieve")].label == "auth required"
     assert edges[("auth", "order")].label == "auto"
-    assert edges[("eligibility", "human_review")].label == "inactive"
+    assert not edges[("eligibility", "auth")].conditional  # coverage never skips auth
+    assert ("eligibility", "human_review") not in edges
     assert edges[("order", "ris_wait")].label == "ris error"
     assert edges[("ris_wait", "order")].label == "retry"
     assert not edges[("retrieve", "packet")].conditional
