@@ -1,8 +1,18 @@
+"""v2 policy retrieval: hybrid semantic + exact-code search, and the 3-step RAG
+(search -> learn the payor's vocabulary -> search again) the graph serves.
+
+Also the two helpers both the graph and the v1-vs-v2 comparisons share, so they
+ask the same question of both retrievers and agree on the right answer:
+
+    referral_query(referral, include_cpt=True)   {"indication", "codes", "payor"}
+    expected_source(payor_name, cpt_code)        the payor+CPT policy doc stem, or None
+"""
 import math
 import os
 import re
 from collections import Counter
 from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -32,6 +42,50 @@ def chunk_policies():
     for doc in load_policies():
         chunks.extend(_chunk_one(doc["path"], doc["text"]))
     return chunks
+
+
+def source_stem(source) -> str:
+    """A chunk's document id: the policy file stem, e.g. meridian-health__lumbar-mri."""
+    return Path(str(source)).stem
+
+
+def referral_query(referral, include_cpt=True) -> dict:
+    """The retrieval question a referral asks: its indication, its codes, its payor.
+    include_cpt=False drops the CPT code (the harder, CPT-removed benchmark query)."""
+    indication = referral.clinical_indication or referral.requested_study or ""
+    codes = ([referral.cpt_code] if include_cpt else []) + list(referral.icd10_codes or [])
+    return {"indication": indication, "codes": [c for c in codes if c], "payor": referral.payor_name}
+
+
+def expected_source(payor_name, cpt_code):
+    """The policy doc that should win for this payor + CPT (docs/CONTRACTS.md section 15):
+    the doc whose payor matches the referral's payor (app.validate.match_payor) and whose
+    chunk metadata cpt contains the CPT. None if there is no such doc."""
+    from app.validate import match_payor
+
+    payor = match_payor(payor_name)
+    if not payor or not cpt_code:
+        return None
+    for chunk in _all_chunks():
+        if chunk["payor"] == payor["name"] and chunk["cpt"] and cpt_code in chunk["cpt"]:
+            return source_stem(chunk["source"])
+    return None
+
+
+@lru_cache(maxsize=1)
+def _all_chunks():
+    return tuple(chunk_policies())
+
+
+@lru_cache(maxsize=1)
+def _doc_freq():
+    """Document frequency of every 4+-letter word over all chunks, and the chunk count."""
+    chunks = _all_chunks()
+    df = Counter()
+    for ch in chunks:
+        for w in set(re.findall(r"[a-z]{4,}", ch["text"].lower())):
+            df[w] += 1
+    return df, len(chunks)
 
 
 def _chunk_one(path, text):
@@ -127,13 +181,8 @@ def extract_keywords(shortlist, query, n=6):
     """STEP 2: harvest the payor-vocabulary terms that govern coverage,
     from the step-1 chunks, that were NOT already in the referral."""
     qwords = set(re.findall(r"[a-z]{4,}", query.lower()))
-    all_chunks, _ = _index()
-
-    df = Counter()
-    for ch in all_chunks:
-        for w in set(re.findall(r"[a-z]{4,}", ch["text"].lower())):
-            df[w] += 1
-    n_docs = len(all_chunks)
+    # Only word statistics are needed here, not the in-process embedding index.
+    df, n_docs = _doc_freq()
 
     tf = Counter()
     for ch in shortlist:
@@ -185,16 +234,6 @@ def _section(chunk):
     return "(title)"
 
 
-def _load_dotenv():
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
-    if os.path.exists(path):
-        for line in open(path):
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                os.environ.setdefault(k.strip(), v.strip())
-
-
 def _show(label, out):
     print(f"\n=== STEP 2 via {label} ===")
     print(f"keywords: {out['keywords']}")
@@ -204,7 +243,9 @@ def _show(label, out):
 
 
 if __name__ == "__main__":
-    _load_dotenv()
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).parent.parent / ".env")
 
     indication = "chronic low back pain, physical therapy has not helped, leg weakness getting worse"
     codes = ["72148", "M54.16"]

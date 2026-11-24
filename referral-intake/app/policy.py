@@ -1,3 +1,9 @@
+"""v1 policy retrieval: keyword overlap over whole policy documents.
+
+app.pipeline (v1) never called this; it is kept as the v1 retriever the
+v1-vs-v2 benchmark (evals/benchmark.py) and the retrieval-compare view measure
+against app.rag.retrieve_3step.
+"""
 import re
 from pathlib import Path
 
@@ -11,9 +17,8 @@ def _words(text):
 
 
 def load_policies():
-    """TODO(claude-code): read the markdown policy docs in corpus/policies/,
-    one per payor per study family. Write 3-4 short synthetic ones per payor
-    covering lumbar MRI, brain MRI, CT chest, mammography."""
+    """The synthetic payor policy docs in corpus/policies/ (one per payor per
+    study family; written by corpus/generate_policies.py), sorted by file name."""
     docs = []
     if POLICY_DIR.exists():
         for p in sorted(POLICY_DIR.glob("*.md")):
