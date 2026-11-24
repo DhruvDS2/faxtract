@@ -2,17 +2,22 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+/**
+ * A neutral label (a count, a code, "Synthetic data"). Badges never fill with
+ * colour: a status tone shows as a small dot before neutral text, and `accent`
+ * renders neutral too (teal is for actions only).
+ */
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full border px-2 py-px text-xs font-medium whitespace-nowrap",
+  "inline-flex h-5 items-center gap-1.5 rounded-sm border border-border bg-bg px-1.5 text-meta font-medium whitespace-nowrap text-fg-muted",
   {
     variants: {
       tone: {
-        ok: "border-ok-border bg-ok-bg text-ok",
-        warn: "border-warn-border bg-warn-bg text-warn",
-        bad: "border-bad-border bg-bad-bg text-bad",
-        idle: "border-idle-border bg-idle-bg text-idle",
-        accent: "border-accent-border bg-accent-subtle text-accent",
-        outline: "border-border bg-bg text-fg-muted",
+        ok: "before:size-1.5 before:shrink-0 before:rounded-full before:bg-ok",
+        warn: "before:size-1.5 before:shrink-0 before:rounded-full before:bg-warn",
+        bad: "before:size-1.5 before:shrink-0 before:rounded-full before:bg-bad",
+        idle: "before:size-1.5 before:shrink-0 before:rounded-full before:border before:border-idle",
+        accent: "",
+        outline: "",
       },
     },
     defaultVariants: { tone: "outline" },

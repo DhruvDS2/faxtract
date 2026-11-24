@@ -5,6 +5,16 @@ import { cn } from "@/lib/utils";
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
+/** Shared by menus and selects: a raised hairline layer. */
+export const menuContentClass = cn(
+  "z-50 min-w-(--menu-min-w) rounded-md border border-border bg-raised p-1 text-body text-fg shadow-float",
+  "data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in",
+);
+export const menuItemClass = cn(
+  "relative flex h-8 cursor-default items-center gap-2 rounded-sm px-2 text-body text-fg outline-none select-none",
+  "data-[highlighted]:bg-surface-2 data-[disabled]:pointer-events-none data-[disabled]:text-fg-faint",
+);
+
 export const DropdownMenuContent = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
@@ -13,7 +23,7 @@ export const DropdownMenuContent = React.forwardRef<
     <DropdownMenuPrimitive.Content
       ref={ref}
       sideOffset={sideOffset}
-      className={cn("z-50 min-w-[10rem] rounded-md border border-border bg-bg p-1 shadow-float", className)}
+      className={cn(menuContentClass, "origin-(--radix-dropdown-menu-content-transform-origin)", className)}
       {...props}
     />
   </DropdownMenuPrimitive.Portal>
@@ -23,13 +33,7 @@ DropdownMenuContent.displayName = "DropdownMenuContent";
 export const DropdownMenuItem = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Item
-    ref={ref}
-    className={cn("flex h-7 cursor-default items-center gap-2 rounded-sm px-2 text-sm outline-none select-none data-[highlighted]:bg-surface-2 data-[disabled]:opacity-50", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => <DropdownMenuPrimitive.Item ref={ref} className={cn(menuItemClass, className)} {...props} />);
 DropdownMenuItem.displayName = "DropdownMenuItem";
 
 export const DropdownMenuSeparator = React.forwardRef<
@@ -37,3 +41,9 @@ export const DropdownMenuSeparator = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
 >(({ className, ...props }, ref) => <DropdownMenuPrimitive.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-border", className)} {...props} />);
 DropdownMenuSeparator.displayName = "DropdownMenuSeparator";
+
+export const DropdownMenuLabel = React.forwardRef<
+  React.ComponentRef<typeof DropdownMenuPrimitive.Label>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>
+>(({ className, ...props }, ref) => <DropdownMenuPrimitive.Label ref={ref} className={cn("px-2 py-1 text-meta text-fg-faint", className)} {...props} />);
+DropdownMenuLabel.displayName = "DropdownMenuLabel";

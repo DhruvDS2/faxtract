@@ -26,3 +26,27 @@ export const traceTone = (s: TraceStatus): Tone | "accent" =>
 /** Confidence tone given the server's threshold (from /health). */
 export const confidenceTone = (value: number | null | undefined, threshold: number): Tone =>
   value == null ? "idle" : value < 0.5 ? "bad" : value < threshold ? "warn" : "idle";
+
+// ---------- the five-state status set (web/DESIGN.md, "Status") ----------
+
+/**
+ * What a status dot shows. `rejected` is a terminal human decision (muted);
+ * `bad` is an error that needs action; `idle` is pending / processing.
+ */
+export type StatusTone = Tone | "rejected";
+
+export const statusTone = (s: ReferralStatus): StatusTone => (s === "rejected" ? "rejected" : STATUS[s].tone);
+
+/** Statuses that mean "something is still running" (the dot breathes). */
+export const isRunning = (s: ReferralStatus) => s === "processing" || s === "approved" || s === "auto_approved";
+
+/**
+ * One status text for a referral, ACK folded in: "Sent to RIS · AA",
+ * "RIS rejected · AE", "RIS error · no ACK". Tables show this instead of a
+ * separate ACK pill.
+ */
+export function statusText(s: ReferralStatus, ack?: AckCode | null): { label: string; tone: StatusTone } {
+  if (s === "sent_to_ris") return { label: ack ? `Sent to RIS · ${ack}` : "Sent to RIS", tone: ack && ack !== "AA" ? "bad" : "ok" };
+  if (s === "ris_error") return { label: ack && ack !== "AA" ? `RIS rejected · ${ack}` : "RIS error · no ACK", tone: "bad" };
+  return { label: STATUS[s].label, tone: statusTone(s) };
+}

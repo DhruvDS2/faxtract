@@ -6,6 +6,6 @@ export const Label = React.forwardRef<
   React.ComponentRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => (
-  <LabelPrimitive.Root ref={ref} className={cn("text-xs font-medium text-fg-muted", className)} {...props} />
+  <LabelPrimitive.Root ref={ref} className={cn("text-meta font-medium text-fg-muted", className)} {...props} />
 ));
 Label.displayName = "Label";

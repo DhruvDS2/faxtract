@@ -10,125 +10,295 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Tokens: web/DESIGN.md is the source of truth for these values. */
+/*
+ * Tokens. web/DESIGN.md is the source of truth for these values; this file is the
+ * only place a colour, size, radius, duration or easing is written down.
+ * Contrast is measured, not guessed: `node scripts/contrast.mjs` (table in DESIGN.md).
+ */
 :root {
+  color-scheme: light;
+
+  /* neutrals: cool, slate-leaning */
   --bg: #ffffff;
-  --surface: #fafafa;
-  --surface-2: #f4f4f5;
-  --border: #e4e4e7;
-  --border-strong: #d4d4d8;
-  --fg: #18181b;
-  --fg-muted: #52525b;
-  --fg-faint: #a1a1aa;
+  --surface: #f7f8fa;
+  --surface-2: #eef1f4;
+  --raised: #ffffff;
+  --selected: #e6eaef;
+  --border: #e3e7ec;
+  --border-strong: #c9d0d9;
+  --control: #8a94a3;
+  --fg: #121820;
+  --fg-muted: #4b5563;
+  --fg-faint: #5c6675;
+  --scrim: rgb(18 24 32 / 0.28);
 
-  --accent: #0f766e;
-  --accent-hover: #115e59;
+  /* the one accent: deep teal, for "act on this" only */
+  --accent: #0b6e66;
+  --accent-hover: #095a54;
   --accent-fg: #ffffff;
-  --accent-subtle: #f0fdfa;
-  --accent-border: #99f6e4;
+  --accent-subtle: #e7f3f1;
+  --accent-border: #9cccc5;
+  --focus: #0b6e66;
 
-  --ok-fg: #15803d;
-  --ok-bg: #f0fdf4;
-  --ok-border: #bbf7d0;
-  --warn-fg: #b45309;
-  --warn-bg: #fffbeb;
-  --warn-border: #fde68a;
-  --bad-fg: #b91c1c;
-  --bad-bg: #fef2f2;
-  --bad-border: #fecaca;
-  --idle-fg: #52525b;
-  --idle-bg: #f4f4f5;
-  --idle-border: #e4e4e7;
+  /* status: colour sits on the status only */
+  --ok: #15734a;
+  --ok-bg: #edf7f1;
+  --ok-border: #b5dcc6;
+  --warn: #9a5600;
+  --warn-bg: #fcf5e8;
+  --warn-border: #ebcf9c;
+  --bad: #be2b2b;
+  --bad-bg: #fcf1f1;
+  --bad-border: #efc2c2;
+  --rejected: #6a7383;
+  --rejected-bg: #f1f3f6;
+  --rejected-border: #d5dae1;
+  --idle: #5b6574;
+  --idle-bg: #f1f3f6;
+  --idle-border: #d5dae1;
 
-  --shadow-float: 0 4px 16px rgb(0 0 0 / 0.08);
+  /* data: two neutral shades (v1 lighter, v2 darker); colour never encodes better/worse */
+  --chart-1: #8a94a3;
+  --chart-2: #3c4654;
+  --chart-track: #eef1f4;
+
+  --shadow-float: 0 1px 2px rgb(18 24 32 / 0.04), 0 8px 24px rgb(18 24 32 / 0.08);
+
+  /* motion */
+  --dur-fast: 120ms;
+  --dur-state: 200ms;
+  --dur-panel: 320ms;
+  --dur-reveal: 600ms;
+  --dur-breathe: 1800ms;
+  --stagger-row: 40ms;
+  --stagger-field: 30ms;
+  --ease-enter: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-pop-scale: 0.98;
+  --motion-dialog-y: 4px;
+
+  /* layout */
+  --shell-nav-w: 224px;
+  --shell-bar-h: 40px;
+  --kv-label: 136px;
+  --toast-offset-bottom: 80px;
+  --toast-offset-side: 16px;
+  --dialog-w: 448px;
+  --menu-min-w: 160px;
+  --popover-w: 288px;
+  --tooltip-max-w: 320px;
+  --code-max-h: 320px;
 }
 
 .dark {
-  --bg: #0c0c0e;
-  --surface: #121215;
-  --surface-2: #1a1a1e;
-  --border: #27272a;
-  --border-strong: #3f3f46;
-  --fg: #f4f4f5;
-  --fg-muted: #a1a1aa;
-  --fg-faint: #71717a;
+  color-scheme: dark;
 
-  --accent: #2dd4bf;
-  --accent-hover: #5eead4;
-  --accent-fg: #04201d;
-  --accent-subtle: #0b2724;
-  --accent-border: #115e59;
+  --bg: #0e1116;
+  --surface: #13171d;
+  --surface-2: #1a1f26;
+  --raised: #191e25;
+  --selected: #232a33;
+  --border: #252b34;
+  --border-strong: #3a434f;
+  --control: #636d7b;
+  --fg: #e6e9ee;
+  --fg-muted: #a7afbb;
+  --fg-faint: #8a93a1;
+  --scrim: rgb(4 6 9 / 0.6);
 
-  --ok-fg: #4ade80;
-  --ok-bg: #0b2416;
-  --ok-border: #14532d;
-  --warn-fg: #fbbf24;
-  --warn-bg: #2a1d05;
-  --warn-border: #78350f;
-  --bad-fg: #f87171;
-  --bad-bg: #2a0c0c;
-  --bad-border: #7f1d1d;
-  --idle-fg: #a1a1aa;
-  --idle-bg: #1a1a1e;
-  --idle-border: #27272a;
+  --accent: #3fae9f;
+  --accent-hover: #5cc2b4;
+  --accent-fg: #03201c;
+  --accent-subtle: #12282a;
+  --accent-border: #23605a;
+  --focus: #4fbcad;
 
-  --shadow-float: 0 4px 16px rgb(0 0 0 / 0.5);
+  --ok: #52bf88;
+  --ok-bg: #11241b;
+  --ok-border: #1f4a35;
+  --warn: #e0a640;
+  --warn-bg: #261d0e;
+  --warn-border: #5a4115;
+  --bad: #f07a76;
+  --bad-bg: #2a1415;
+  --bad-border: #5e2a2a;
+  --rejected: #8c95a3;
+  --rejected-bg: #1a1f26;
+  --rejected-border: #343c47;
+  --idle: #9aa3b0;
+  --idle-bg: #1a1f26;
+  --idle-border: #343c47;
+
+  --chart-1: #5f6977;
+  --chart-2: #b9c1cc;
+  --chart-track: #1a1f26;
+
+  --shadow-float: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.4);
 }
 
 @theme inline {
+  /* only tokens: Tailwind's palette, type, radius and shadow scales are cleared */
+  --color-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --animate-*: initial;
+  --ease-*: initial;
+
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-raised: var(--raised);
+  --color-selected: var(--selected);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-control: var(--control);
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
   --color-fg-faint: var(--fg-faint);
+  --color-scrim: var(--scrim);
 
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-fg: var(--accent-fg);
   --color-accent-subtle: var(--accent-subtle);
   --color-accent-border: var(--accent-border);
+  --color-focus: var(--focus);
 
-  --color-ok: var(--ok-fg);
+  --color-ok: var(--ok);
   --color-ok-bg: var(--ok-bg);
   --color-ok-border: var(--ok-border);
-  --color-warn: var(--warn-fg);
+  --color-warn: var(--warn);
   --color-warn-bg: var(--warn-bg);
   --color-warn-border: var(--warn-border);
-  --color-bad: var(--bad-fg);
+  --color-bad: var(--bad);
   --color-bad-bg: var(--bad-bg);
   --color-bad-border: var(--bad-border);
-  --color-idle: var(--idle-fg);
+  --color-rejected: var(--rejected);
+  --color-rejected-bg: var(--rejected-bg);
+  --color-rejected-border: var(--rejected-border);
+  --color-idle: var(--idle);
   --color-idle-bg: var(--idle-bg);
   --color-idle-border: var(--idle-border);
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 6px;
-  --shadow-float: var(--shadow-float);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-track: var(--chart-track);
 
+  /* type: one display size, three text sizes, one code size */
+  --text-display: 22px;
+  --text-display--line-height: 28px;
+  --text-display--font-weight: 600;
+  --text-display--letter-spacing: -0.011em;
+  --text-title: 15px;
+  --text-title--line-height: 22px;
+  --text-title--font-weight: 600;
+  --text-title--letter-spacing: -0.006em;
+  --text-body: 13px;
+  --text-body--line-height: 20px;
+  --text-meta: 12px;
+  --text-meta--line-height: 16px;
+  --text-code: 12px;
+  --text-code--line-height: 18px;
+  /* legacy aliases (v2-ui screens): mapped onto the scale above */
   --text-xs: 12px;
   --text-xs--line-height: 16px;
   --text-sm: 13px;
   --text-sm--line-height: 20px;
-  --text-base: 14px;
-  --text-base--line-height: 20px;
-  --text-lg: 16px;
-  --text-lg--line-height: 24px;
+  --text-base: 15px;
+  --text-base--line-height: 22px;
+  --text-lg: 15px;
+  --text-lg--line-height: 22px;
 
-  --animate-pulse-ring: pulse-ring 1.2s ease-out infinite;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+  --radius-xl: 6px;
 
-  @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
-    100% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent); }
+  --shadow-float: var(--shadow-float);
+
+  --ease-enter: var(--ease-enter);
+  --ease-exit: var(--ease-exit);
+
+  /* the only looping animation: a calm opacity breathe for "running" (no glow) */
+  --animate-breathe: breathe var(--dur-breathe) ease-in-out infinite;
+  /* legacy name kept for the v2-ui graph's running node; now the same breathe */
+  --animate-pulse-ring: breathe var(--dur-breathe) ease-in-out infinite;
+  --animate-fade-in: fade-in var(--dur-state) var(--ease-enter) both;
+  /* progressive fill: set --i (row / field index) on the element; capped so long lists stay quick */
+  --animate-row-in: fade-in var(--dur-state) var(--ease-enter) calc(min(var(--i, 0), 14) * var(--stagger-row)) both;
+  --animate-field-in: fade-in var(--dur-state) var(--ease-enter) calc(min(var(--i, 0), 30) * var(--stagger-field)) both;
+  --animate-fade-out: fade-out var(--dur-fast) var(--ease-exit) both;
+  --animate-pop-in: pop-in var(--dur-fast) var(--ease-enter) both;
+  --animate-pop-out: fade-out var(--dur-fast) var(--ease-exit) both;
+  --animate-dialog-in: dialog-in var(--dur-state) var(--ease-enter) both;
+  --animate-dialog-out: fade-out var(--dur-fast) var(--ease-exit) both;
+
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  /* distances come from --motion-* vars, which are 0 under prefers-reduced-motion */
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(var(--motion-pop-scale));
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--motion-dialog-y)) scale(var(--motion-pop-scale));
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 }
 
+/* durations as utilities: duration-fast / -state / -panel / -reveal */
+@utility duration-fast {
+  transition-duration: var(--dur-fast);
+}
+@utility duration-state {
+  transition-duration: var(--dur-state);
+}
+@utility duration-panel {
+  transition-duration: var(--dur-panel);
+}
+@utility duration-reveal {
+  transition-duration: var(--dur-reveal);
+}
 @layer base {
   * {
     border-color: var(--border);
@@ -142,29 +312,94 @@
     background: var(--bg);
     color: var(--fg);
     font-family: var(--font-sans);
-    font-size: 13px;
-    line-height: 20px;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+    font-feature-settings: normal;
   }
   :focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
-    outline-offset: 1px;
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
   }
   ::selection {
-    background: var(--accent-subtle);
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
   }
 }
 
-/* React Flow: keep it inside the design system (no default blue, no shadows). */
+/*
+ * Shared-element navigation: the incoming page is opaque at once so the morphing
+ * element stays visible; everything beside the path to it fades in after the
+ * outgoing page has left (each branch once, so opacities never compound).
+ */
+[data-route-morph] > :not([data-morph]):not(:has([data-morph])),
+[data-route-morph] :has([data-morph]) > :not([data-morph]):not(:has([data-morph])) {
+  animation: fade-in var(--dur-state) var(--ease-enter) var(--dur-fast) both;
+}
+
+/* reduced motion: every transform distance is zero, so CSS motion is opacity only */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --stagger-row: 0ms;
+    --stagger-field: 0ms;
+    --motion-pop-scale: 1;
+    --motion-dialog-y: 0px;
+  }
+}
+
+/* React Flow: inside the design system (no default blue, no shadows). */
 .react-flow {
   --xy-background-color: var(--bg);
   --xy-edge-stroke: var(--border-strong);
   --xy-edge-stroke-selected: var(--accent);
-  --xy-node-border-radius: 6px;
+  --xy-node-border-radius: var(--radius-md);
   --xy-node-boxshadow-hover: none;
   --xy-node-boxshadow-selected: none;
   --xy-controls-button-background-color: var(--surface);
+  --xy-controls-button-background-color-hover: var(--surface-2);
+  --xy-controls-button-color: var(--fg-muted);
   --xy-controls-button-border-color: var(--border);
+  --xy-attribution-background-color: transparent;
   font-family: var(--font-sans);
+}
+
+/* sonner: a raised hairline card; the status is a dot, the text stays neutral */
+[data-sonner-toaster] {
+  --width: 360px;
+  font-family: var(--font-sans);
+}
+[data-sonner-toaster] [data-sonner-toast] {
+  gap: 8px;
+  padding: 12px 16px;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-icon] {
+  width: 8px;
+  height: 8px;
+  margin: 0;
+  align-self: flex-start;
+  margin-top: 6px;
+}
+html [data-sonner-toaster][data-sonner-theme] {
+  --normal-bg: var(--raised);
+  --normal-border: var(--border);
+  --normal-text: var(--fg);
+  --border-radius: var(--radius-md);
+}
+html [data-sonner-toaster] [data-sonner-toast] {
+  transition:
+    transform var(--dur-panel) var(--ease-enter),
+    opacity var(--dur-state) var(--ease-enter),
+    height var(--dur-state) var(--ease-enter);
 }

@@ -1,22 +1,25 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Table primitives: 40px rows on hairlines, a sticky header, tabular numbers.
+ * Borders sit on cells (border-separate) so the sticky header keeps its rule.
+ * A selected row is a neutral fill; there is no coloured left bar.
+ */
 export const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
-    <table ref={ref} className={cn("w-full caption-bottom border-collapse text-sm", className)} {...props} />
+    <table ref={ref} className={cn("w-full caption-bottom border-separate border-spacing-0 text-body", className)} {...props} />
   ),
 );
 Table.displayName = "Table";
 
 export const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  ({ className, ...props }, ref) => (
-    <thead ref={ref} className={cn("sticky top-0 z-10 bg-surface [&_tr]:border-b", className)} {...props} />
-  ),
+  ({ className, ...props }, ref) => <thead ref={ref} className={cn("sticky top-0 z-10 bg-bg", className)} {...props} />,
 );
 TableHeader.displayName = "TableHeader";
 
 export const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  ({ className, ...props }, ref) => <tbody ref={ref} className={cn("[&_tr:last-child]:border-0", className)} {...props} />,
+  ({ className, ...props }, ref) => <tbody ref={ref} className={cn("[&>tr:last-child>td]:border-b-0", className)} {...props} />,
 );
 TableBody.displayName = "TableBody";
 
@@ -25,8 +28,8 @@ export const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttribut
     <tr
       ref={ref}
       className={cn(
-        "h-8 border-b border-border transition-colors hover:bg-surface-2",
-        "data-[state=selected]:bg-accent-subtle data-[state=selected]:shadow-[inset_2px_0_0_var(--accent)]",
+        "group/row h-10 transition-colors duration-fast ease-enter hover:bg-surface",
+        "data-[state=selected]:bg-selected aria-selected:bg-selected",
         className,
       )}
       {...props}
@@ -39,7 +42,10 @@ export const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttr
   ({ className, ...props }, ref) => (
     <th
       ref={ref}
-      className={cn("h-8 px-3 text-left align-middle text-xs font-medium whitespace-nowrap text-fg-muted", className)}
+      className={cn(
+        "h-10 border-b border-border px-3 text-left align-middle text-meta font-medium whitespace-nowrap text-fg-muted",
+        className,
+      )}
       {...props}
     />
   ),
@@ -47,6 +53,6 @@ export const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttr
 TableHead.displayName = "TableHead";
 
 export const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
-  ({ className, ...props }, ref) => <td ref={ref} className={cn("px-3 py-1 align-middle", className)} {...props} />,
+  ({ className, ...props }, ref) => <td ref={ref} className={cn("border-b border-border px-3 py-1 align-middle", className)} {...props} />,
 );
 TableCell.displayName = "TableCell";
