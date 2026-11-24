@@ -1,0 +1,206 @@
+{
+  "what": "sha256 of every page image's raw pixels (PIL Image.tobytes(), mode L), exactly as the generator built them in memory, for corpus/generate_faxes.py --seed 42 --count 60 BEFORE the ground-truth fix: the generator at commit 3914b53, i.e. the pages evals/extraction_eval.json was recorded on (its per-field truth matches that run's ground_truth.json exactly). Recorded once; tests and evals/gt_changes.py compare the fixed generator's pages against it.",
+  "base_commit": "3914b53",
+  "seed": 42,
+  "count": 60,
+  "fonts": {
+    "bold": "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+    "regular": "/System/Library/Fonts/Supplemental/Arial.ttf",
+    "italic": "/System/Library/Fonts/Supplemental/Times New Roman Italic.ttf"
+  },
+  "pages": {
+    "referral_000.pdf": [
+      "948a48de269fc57addc4e626b2f2592d28b95050b3df8e1fe7e690661fbf750d"
+    ],
+    "referral_001.pdf": [
+      "efcf808bf28a185909e9cb7a7ae8ecc483e0d9522197b1438b3e3ccc729a55ef"
+    ],
+    "referral_002.pdf": [
+      "51b42a6dac7f65eb664278d856d1a4c40d6af7274ac3963421270ea85b5949aa"
+    ],
+    "referral_003.pdf": [
+      "f3aa84aea3d196625e446ea8dcf8133f5cc4427df2f6d9478a593d7e64bbc214"
+    ],
+    "referral_004.pdf": [
+      "de57d22451c3bb51cb8999001abdf406f5bde9f64ec1cabc774bd83c9f00d191"
+    ],
+    "referral_005.pdf": [
+      "921ee034448d7ecfb565dfdf36a4b8619b6a7c4893e6cd3728ff86900a708e4e"
+    ],
+    "referral_006.pdf": [
+      "19ee2f5bfd3832ff37bc6d96feb94e5baf8494c716e32d80022551647a2d736f"
+    ],
+    "referral_007.pdf": [
+      "1bc4a5f3fa2a71f19fe730fb927fd1549a3a47d08f81086f8c7420700eadad61"
+    ],
+    "referral_008.pdf": [
+      "1c35c8a76d5890b839d25343c025c411ff79bb28059d1b950b906d8dbe26f14d",
+      "ba12d052d7158b06324e90ee0afe5b0219d3a65e419501c1d9a681df37e3b395"
+    ],
+    "referral_009.pdf": [
+      "e633b358193743c897d4eb0c59f973ee04c8d343819b0bef77eb1820d706ead0"
+    ],
+    "referral_010.pdf": [
+      "9ec283329bc00d9e70827a9520caf5a8b6db0d740b690a7a17e3ca5d6a7efe8f"
+    ],
+    "referral_011.pdf": [
+      "d951395b219a2aa7ceff5470f7623bb6644eec34e025afddac304f60d433b194",
+      "1dafbccd9671ce8e229c3645ff51e4907dc686da08743c418f042949fb1195ca"
+    ],
+    "referral_012.pdf": [
+      "e8c71dae3d717feb354613b7cfb38859ef179df735fe3e96b68dfb78f3b597b4"
+    ],
+    "referral_013.pdf": [
+      "ce892d33d7927305b028ff7ef2d272423c922e1c2d96cd1d12e8c27080dac1eb"
+    ],
+    "referral_014.pdf": [
+      "3832a1c1a79a8845708b571f7c3d4bbf19a960c4672ac42b2d8dffdf1fd37ca3",
+      "0e0d3ae7ef0958d975779ef0f32d5607c95b09b6dd008c361058d1207dd3c446"
+    ],
+    "referral_015.pdf": [
+      "452b1fe4995e394f243b0c570884221137edc89418b1d58bb7adf6f93c560cbe"
+    ],
+    "referral_016.pdf": [
+      "4c9a46def65cb79de11327ca56b2c48b276b67f5417afd84cb8ae526e0c3b6d1"
+    ],
+    "referral_017.pdf": [
+      "c0fc2aa4bff7a5227d6a4bcd243ae16badb06270c0684573e367bbfffe281535"
+    ],
+    "referral_018.pdf": [
+      "325100295cd2387f2032d0a0a14010f40296134421f76ac26ab19f780f4ae026"
+    ],
+    "referral_019.pdf": [
+      "81440d853ad1a5e427968cd4e43b8a8b507903a5a5be2c506ebd9866881bf778"
+    ],
+    "referral_020.pdf": [
+      "5cc5f2dd80ee89b4f94aeaf5ea2e4e8bfb508141065307a74eeaac767fb6b902"
+    ],
+    "referral_021.pdf": [
+      "dd402d19c20be206efe9ef8cb9cf65022efc291966ae1aa8ab0115b573488242",
+      "926731de75266f95315881bc25b3642926288e40bb75cd8aad8c9223e9ef86a6"
+    ],
+    "referral_022.pdf": [
+      "0cb7cc68f9fcec0d14e11549cfc2c5b11fa4f387b19b9c46290d39098d4a714c"
+    ],
+    "referral_023.pdf": [
+      "612ca124c621daa946ecc3c8c63ff69fcd0eb5895b4555370a3e2a769b79883f"
+    ],
+    "referral_024.pdf": [
+      "3968d69e4337d9c173f2aa0b0d54413ebf90696ca5398d56f425ce69006a3ee8"
+    ],
+    "referral_025.pdf": [
+      "063b7eaf113cd0d2e01ef0e9945f3762d7fb03a8aa82f63f5e45d975289f4bf3"
+    ],
+    "referral_026.pdf": [
+      "d8ef29db17492175a7acaa019d055bd45eb930cd7a627b7afd98cc0a5831adab"
+    ],
+    "referral_027.pdf": [
+      "0c7ba0bdf48e06c392ee8092e66880ae2996972034ec64f98c946104a18b02c2",
+      "af5dd2bcdc53523016a30ae74c6505dc8dd472ae85067a1c7365a8528d412e48"
+    ],
+    "referral_028.pdf": [
+      "db030a7ade5191baa8ce2536df0f596c62694ab4b8276dce12af5844bc6dbc1e",
+      "a5a4c542f882f17532f420d9f469ce0399060d5d1ff172c89a327ca7b71767d2"
+    ],
+    "referral_029.pdf": [
+      "b4f3b1bd30798e57f7bb8823a547f19990568e6e7cf129d0fa1de2209935b8cc"
+    ],
+    "referral_030.pdf": [
+      "1f8d82c6f0ade676b0e8dd7d9a516873fd44b2da7ee8a7ac8ef804e9ecf901fe"
+    ],
+    "referral_031.pdf": [
+      "516fe8ebeef58f911841f4d43d7adb5bc651810a6dc77d63bc31827838558138",
+      "0974e50eb7b9e1a00bd9804d9a6a43dcdf014ec20c5e131849db26ed56e0b211"
+    ],
+    "referral_032.pdf": [
+      "0ee2f7d377c24ed634aa97c2af9ea148335234de8fb7259378e3835abfe3d702"
+    ],
+    "referral_033.pdf": [
+      "12199d3d3c50a171dfb5c75608cb0fcf9bdc784a473dd49f096c199eecb46812"
+    ],
+    "referral_034.pdf": [
+      "251505c22cca4c17d4bb56869b6987e7267a732fca20b5c121d9548353c1e52b",
+      "851995aeb8468deee24408b120e1acfeb0b5eda8094063ba1500a1c9776df2cc"
+    ],
+    "referral_035.pdf": [
+      "43037c2f8f1415b89cf46c4838bbcf290b22deb3bf36de49608032e268bc0593"
+    ],
+    "referral_036.pdf": [
+      "aafaba8501cc1c677a4c72a82c8dce75d4499603e54bd85c1d3cfe74971d677a"
+    ],
+    "referral_037.pdf": [
+      "e87742ca325dc18b42b70ad54ace134416ca0c13e1e93cb5e8260f0812ddfd34",
+      "89f85f85cbf4b84820930912ae88f59a8d729d07c38828fe8f31078ab7360319"
+    ],
+    "referral_038.pdf": [
+      "3c00545bab29ca4cee9a00581c57f3483bdaf70d1bcd846f2ebcc9812a7d2020"
+    ],
+    "referral_039.pdf": [
+      "9716da93b25e985c8053fbdefda4c039809f2e76371859043d353a84eb2284e3",
+      "6cadca2a811088d36ee0809b423dabe85430138a59489988a60820906f563db5"
+    ],
+    "referral_040.pdf": [
+      "23b5dd2d77e413da338acbec49e722dd596c20ec9f121c2a9779d05a7c354255"
+    ],
+    "referral_041.pdf": [
+      "f1114fb94d039d815e166f439fc3dbc98a50d607fd9e80cd65203ab974a4360e"
+    ],
+    "referral_042.pdf": [
+      "b0710569bd725be148979c98ce16860a99ea5dc2353378fd6b60187fda99be14"
+    ],
+    "referral_043.pdf": [
+      "408e99cfa280b672442c69a73be2669bce6b4b0f5b5db8ebf7af7f5023870d13"
+    ],
+    "referral_044.pdf": [
+      "8617bf7b82fe81b967e0d3a45285df9c790216de901ca57ee30b987b044e0158"
+    ],
+    "referral_045.pdf": [
+      "cba6f2d246fc17327533a4d62b5cc9c8af150f885e1aed0dea60da05bb88dd2b"
+    ],
+    "referral_046.pdf": [
+      "e0fdc0d09894684fabb4e717787dd4549f4fa2781bdea9784a1ba950cf489581"
+    ],
+    "referral_047.pdf": [
+      "a06b412f531901c35092aaaabae2d83f6047c09e7a52c0573d3b8c1a0e9eb518",
+      "8733a430a34f249cbfbf3bc795842b9e3af5f301ba942f4859a035c62cb3ba46"
+    ],
+    "referral_048.pdf": [
+      "06ad5f35068db5c500ae37810bd6ead25b8a0b0637e6341c1dd958ff526c945b"
+    ],
+    "referral_049.pdf": [
+      "00f77d4653897d4a17b140c52983bfdf3d547f30844a96fa2da126919aaec14e",
+      "0102d39b93c295f6c8a7d4a424c04bfd1f1dff64fbb284472d37dbb607d5b6ae"
+    ],
+    "referral_050.pdf": [
+      "b6072b49ae71c30fbd7b6b88a3a5310c70d8fd3a6822779f1c38fced338a533c"
+    ],
+    "referral_051.pdf": [
+      "2df2cab31369350a8d1fa7616ab2186236c70d78769bf8b8461359fe22d2e85d"
+    ],
+    "referral_052.pdf": [
+      "91d8eccffe414499b120f10567aa010e3534e2292334b0593f0a7ace82057678"
+    ],
+    "referral_053.pdf": [
+      "c9144fe4fc6338c91d0909554d61801b981f5a43e2ac3c5f0708a0488fabde7e",
+      "11d9c4fb1c2f06077a1f4e98c90b1231546719563c96249a2c5e6d616c9a2d4a"
+    ],
+    "referral_054.pdf": [
+      "697b0d72b2db72aae310987ee921feb52c4b033e17bf84ff9d53d5dd8f0c6c3a"
+    ],
+    "referral_055.pdf": [
+      "73c45a8905c5c3019af6a5ed46f57a64b7e5401fed35015f1fd37d9b65baf9eb"
+    ],
+    "referral_056.pdf": [
+      "fd44bd5a21d3c2522bc755077708d63472fe357ac01f2cfb295b4813a87b0a89"
+    ],
+    "referral_057.pdf": [
+      "f66c776f45f61c9fab46e82ecca2d677deb10875e511d63b0916b872c5d50975"
+    ],
+    "referral_058.pdf": [
+      "d0772130f32bdf781992ced47bdb88337830d1ae2f2acc2146759b76c6f31404"
+    ],
+    "referral_059.pdf": [
+      "2681b57abd6cf508c00290d5f2a99f131819e192f1f5770c0081bf2a82bb3eea"
+    ]
+  }
+}
