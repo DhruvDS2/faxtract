@@ -1,11 +1,9 @@
 """faxtract referral-intake HTTP API (docs/CONTRACTS.md §5).
-
-    uvicorn app.main:app --port 8000          (from referral-intake/)
-
+Run from referral-intake/:  uvicorn app.main:app --port 8000
 PIPELINE picks the served runner: graph (default, graph.service.GraphRunner) or
 v1 (app.runner_v1.V1Runner). DATABASE_URL is required; startup fails loudly
 without it. Every 4xx body is app.contracts.ErrorBody. No CORS: the UI talks to
-the API through the Vite proxy.
+the API through the Vite proxy. Routes live in app/api/.
 """
 from __future__ import annotations
 
