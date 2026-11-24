@@ -139,7 +139,7 @@ function StepNodeView({ data }: NodeProps<StepFlowNode>) {
         "transition-[border-color,background-color,opacity] duration-state ease-enter",
         CARD[data.state],
         data.bare && "border-solid",
-        isHovered && data.state !== "paused" && "bg-surface-2",
+        isHovered && data.state !== "paused" && data.state !== "error" && "border-control bg-surface-2",
         // Selection is a neutral fill; a paused step keeps its amber and darkens its edge instead.
         isSelected && (data.state === "paused" ? "border-warn" : data.state === "error" ? "border-bad bg-selected" : "border-control bg-selected"),
         unlit && "opacity-40",

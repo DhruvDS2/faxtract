@@ -115,10 +115,7 @@ export const NodePanel = forwardRef<HTMLElement, NodePanelProps>(function NodePa
                 <span className="tabular-nums">{totals.cost > 0 ? fmtUsd(totals.cost) : <span className="text-fg-muted">No model cost</span>}</span>
               </KeyValue>
               <KeyValue label="Attempts">
-                <span className="tabular-nums">
-                  {execs.length}
-                  {execs.length > 1 && <span className="text-fg-muted"> · {execs.length - 1} retr{execs.length === 2 ? "y" : "ies"} or re-runs</span>}
-                </span>
+                <span className="tabular-nums">{execs.length}</span>
               </KeyValue>
             </section>
 

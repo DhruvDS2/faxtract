@@ -95,8 +95,8 @@ export function TraceTimeline({
       rows.map((r) => {
         let edge = -Infinity;
         return r.bars.map((b) => {
-          const x = Math.max((b.start / axisMax) * trackW, edge + 1);
           const w = Math.max((b.ms / axisMax) * trackW, b.ex.status === "interrupted" ? MIN_BAR + 1 : MIN_BAR);
+          const x = Math.min(Math.max((b.start / axisMax) * trackW, edge + 1), Math.max(0, trackW - w));
           edge = x + w;
           return { x, w };
         });
@@ -109,7 +109,8 @@ export function TraceTimeline({
       <div className="flex items-baseline gap-3">
         <h2 className="text-body font-medium text-fg">Trace</h2>
         <span className="text-meta text-fg-faint tabular-nums">
-          {rows.length} run{rows.length === 1 ? "" : "s"} · {fmtMs(total)} in steps
+          {rows.length} run{rows.length === 1 ? "" : "s"}
+          {total > 0 && ` · ${fmtMs(total)} in steps`}
           {live && " · updating live"}
         </span>
       </div>
