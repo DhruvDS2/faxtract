@@ -39,7 +39,11 @@ def check_comparable(record: ReferralRecord) -> None:
     r = record.referral
     if not r.payor_name:
         raise CompareUnavailable("this referral has no payor, and both retrievers filter policies by payor")
-    if record.auth is None or not record.auth.required:
+    auth = record.auth
+    if auth is None:  # the pipeline never evaluated auth for this record: work it out now
+        from app.auth_packet import auth_requirement
+        auth = auth_requirement(r)
+    if not auth.required:
         study = f"CPT {r.cpt_code}" if r.cpt_code else "this study"
         raise CompareUnavailable(f"{r.payor_name} requires no prior authorization for {study}, "
                                  f"so there is no policy to retrieve")

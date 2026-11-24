@@ -141,6 +141,10 @@ def _resume(state: ApiState, record: ReferralRecord, action: ReviewAction) -> Re
     except NotImplementedError as exc:
         raise ApiError(501, f"the {record.pipeline} pipeline cannot {action.kind} yet: {exc}",
                        status=record.status) from None
+    except ValueError as exc:
+        # the runner refused the action for the state it is in (e.g. the graph is not
+        # paused where this action resumes): a conflict, not a server error
+        raise ApiError(409, f"cannot {action.kind} now: {exc}", status=record.status) from None
     except Exception as exc:
         log.exception("%s failed for %s", action.kind, record.id)
         raise ApiError(500, f"{action.kind} failed inside the {record.pipeline} pipeline: "
