@@ -32,7 +32,9 @@ export function statusView(record: ReferralRecord, reasons: number, trace: Trace
   switch (record.status) {
     case "processing": {
       const node = runningNode(trace);
-      return { tone: "idle", text: `${node ? (NODE_WORDS[node] ?? "Reading the fax") : "Reading the fax"}…`, running: true, detail };
+      // while the fax is read, the name line already says "Reading the fax…" (unnamedLabel)
+      const words = !node || node === "extract" ? "Extracting the fields" : (NODE_WORDS[node] ?? "Running");
+      return { tone: "idle", text: `${words}…`, running: true, detail };
     }
     case "needs_review":
       return { tone: "warn", text: reasons ? `Paused for review · ${plural(reasons, "reason")}` : "Paused for review", running: false, detail };
@@ -71,7 +73,7 @@ export function statusView(record: ReferralRecord, reasons: number, trace: Trace
 }
 
 const SUMMARY_TEXT: Record<ReferralStatus, { tone: StatusTone; text: string; running: boolean }> = {
-  processing: { tone: "idle", text: "Reading the fax…", running: true },
+  processing: { tone: "idle", text: "Extracting the fields…", running: true },
   needs_review: { tone: "warn", text: "Paused for review", running: false },
   approved: { tone: "ok", text: "Approved · sending to RIS", running: true },
   auto_approved: { tone: "ok", text: "Auto-approved · sending to RIS", running: true },

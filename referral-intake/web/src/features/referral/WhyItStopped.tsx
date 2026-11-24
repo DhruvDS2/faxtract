@@ -134,7 +134,7 @@ export function ReadingTheFax({ record, trace }: { record: ReferralRecord; trace
   const seen = STEPS.filter((s) => state(s) !== "pending");
   const shown = STEPS.slice(0, Math.max(1, Math.min(STEPS.length, seen.length + 1)));
   return (
-    <Section title="Reading the fax…">
+    <Section title="Still in the pipeline">
       <p className="mt-1 text-body text-fg-muted">
         Received {fmtWhen(record.created_at)}. The fields fill in as soon as the pipeline has read them.{" "}
         <Link to={`/graph?referral=${record.id}`} className="text-fg underline decoration-border-strong underline-offset-4 hover:decoration-fg-muted">

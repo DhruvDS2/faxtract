@@ -8,7 +8,7 @@ const FILL = { ok: "bg-chart-1", idle: "bg-chart-1", warn: "bg-warn", bad: "bg-b
 
 export type ConfidenceMeterProps = {
   value: number | null | undefined;
-  /** Override the server threshold (styleguide samples); normally read from GET /health. */
+  /** The approval threshold. Given, the meter doesn't query GET /health itself (pass it from the page in tables). */
   threshold?: number;
   /** A tiny bar after the number, with a tick at the threshold. */
   bar?: boolean;
@@ -21,9 +21,18 @@ export type ConfidenceMeterProps = {
  * Confidence as a two-decimal number. Neutral at or above the threshold, amber
  * below it, red below 0.5. The threshold comes from GET /health, never hardcoded.
  */
-export function ConfidenceMeter({ value, threshold, bar = false, quiet = false, className }: ConfidenceMeterProps) {
-  const health = useHealth();
-  const t = threshold ?? health.data?.threshold;
+export function ConfidenceMeter(props: ConfidenceMeterProps) {
+  // a given threshold never subscribes to /health (a table of meters would add one query observer per row)
+  return props.threshold != null ? <Meter {...props} /> : <MeterWithHealth {...props} />;
+}
+
+function MeterWithHealth(props: ConfidenceMeterProps) {
+  const threshold = useHealth().data?.threshold;
+  return <Meter {...props} threshold={threshold} />;
+}
+
+function Meter({ value, threshold, bar = false, quiet = false, className }: ConfidenceMeterProps) {
+  const t = threshold;
   const tone = t == null ? "idle" : confidenceTone(value, t);
   const low = tone === "warn" || tone === "bad";
   const label =

@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useHealth, useOrders, useReferrals } from "@/api/queries";
 import { IS_MOCK } from "@/api/client";
+import { StatusDot } from "@/components/StatusPill";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TravelingHighlight, useTravelingHighlight } from "@/components/TravelingHighlight";
 import { Tip } from "@/components/ui/tooltip";
@@ -19,6 +20,57 @@ function Health({ label, up, testId }: { label: string; up: boolean | undefined;
         {label} {word}
       </span>
     </Tip>
+  );
+}
+
+/** How long a first /health check may take before we say the API isn't answering. */
+const CHECK_GRACE_MS = 4000;
+
+/**
+ * The top bar's health: pipeline, RIS and DB as words once /health answers. Before
+ * that, one quiet "Checking the API…"; if it fails or takes longer than the grace
+ * period, "API not responding" in red. A failed refetch keeps the last known pipeline.
+ */
+function HealthWords({ health }: { health: ReturnType<typeof useHealth> }) {
+  const [late, setLate] = useState(false);
+  const waiting = !health.data && !health.isError;
+  useEffect(() => {
+    if (!waiting) return;
+    const t = window.setTimeout(() => setLate(true), CHECK_GRACE_MS);
+    return () => window.clearTimeout(t);
+  }, [waiting]);
+
+  const down = (
+    <span role="alert" data-testid="health-api" className="text-meta font-medium whitespace-nowrap text-bad">
+      API not responding
+    </span>
+  );
+  if (!health.data) {
+    if (health.isError || late) return down;
+    return (
+      <span data-testid="health-api" aria-live="polite" className="inline-flex items-center gap-2 text-meta whitespace-nowrap text-fg-faint">
+        <StatusDot tone="idle" running />
+        Checking the API…
+      </span>
+    );
+  }
+  const h = health.data;
+  return (
+    <>
+      <Tip content="Which pipeline the API is serving (PIPELINE env)">
+        <span data-testid="pipeline-badge" className="font-mono text-code text-fg-faint">
+          pipeline <span className="text-fg-muted">{h.pipeline}</span>
+        </span>
+      </Tip>
+      {health.isError ? (
+        down
+      ) : (
+        <>
+          <Health label="RIS" up={h.ris === "up"} testId="health-ris" />
+          <Health label="DB" up={h.db} testId="health-db" />
+        </>
+      )}
+    </>
   );
 }
 
@@ -83,19 +135,8 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-(--shell-bar-h) shrink-0 items-center gap-4 border-b border-border px-4">
           {IS_MOCK && <span className="text-meta font-medium text-warn">Mock data</span>}
-          {health.isError && !health.data && (
-            <span role="alert" className="text-meta font-medium text-bad">
-              The API isn't responding
-            </span>
-          )}
           <div className="ml-auto flex items-center gap-4">
-            <Tip content="Which pipeline the API is serving (PIPELINE env)">
-              <span data-testid="pipeline-badge" className="font-mono text-code text-fg-faint">
-                pipeline <span className="text-fg-muted">{health.data?.pipeline ?? "…"}</span>
-              </span>
-            </Tip>
-            <Health label="RIS" up={health.data ? health.data.ris === "up" : undefined} testId="health-ris" />
-            <Health label="DB" up={health.data?.db} testId="health-db" />
+            <HealthWords health={health} />
             <ThemeToggle />
           </div>
         </header>

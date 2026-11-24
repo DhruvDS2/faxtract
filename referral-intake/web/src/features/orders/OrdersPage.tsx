@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { columns, type OrderRow, type OrdersTableMeta } from "./columns";
 import { headline, isUnacknowledged, metaLine } from "./orderState";
 import { RetrySend } from "./RetrySend";
-import { FillOnce } from "./FillOnce";
 import { useNow } from "./useNow";
 
 type View = "all" | "unacknowledged";
@@ -23,18 +22,6 @@ const VIEW_PARAM = "show";
 const TABLE_LAYOUT =
   "[&_table]:table-fixed [&_th:last-child]:w-28 [&_td:first-child]:pl-6 [&_th:first-child]:pl-6 [&_td:last-child]:pr-6 [&_th:last-child]:pr-6";
 
-
-/**
- * The base tab trigger shows its focus ring after a mouse click (Radix moves focus
- * itself, which counts as focus-visible). Keep the ring for the keyboard only:
- * a pointer press marks the tab, a key press unmarks it.
- */
-const pointerQuiet = {
-  className: "data-[pointer]:outline-none",
-  onPointerDown: (e: React.PointerEvent<HTMLElement>) => (e.currentTarget.dataset.pointer = ""),
-  onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => delete e.currentTarget.dataset.pointer,
-  onBlur: (e: React.FocusEvent<HTMLElement>) => delete e.currentTarget.dataset.pointer,
-};
 
 const clock = (t: number) => new Date(t).toTimeString().slice(0, 5);
 
@@ -138,10 +125,10 @@ export function OrdersPage() {
       <div className="flex h-10 shrink-0 items-end gap-6 border-b border-border px-6">
         <Tabs value={view} onValueChange={(v) => setView(v as View)}>
           <TabsList className="border-b-0" aria-label="Filter orders">
-            <TabsTrigger value="all" data-testid="orders-filter-all" {...pointerQuiet}>
+            <TabsTrigger value="all" data-testid="orders-filter-all">
               All {orders.data && <span className="font-normal text-fg-faint tabular-nums">{all.length}</span>}
             </TabsTrigger>
-            <TabsTrigger value="unacknowledged" data-testid="orders-filter-errors" {...pointerQuiet}>
+            <TabsTrigger value="unacknowledged" data-testid="orders-filter-errors">
               Not acknowledged {orders.data && <span className="font-normal text-fg-faint tabular-nums">{unacked.length}</span>}
             </TabsTrigger>
           </TabsList>
@@ -158,7 +145,6 @@ export function OrdersPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <FillOnce ready={!orders.isPending}>
           <DataTable
             data={rows}
             columns={columns}
@@ -182,7 +168,6 @@ export function OrdersPage() {
             quickAction={(r) => (r.retryable ? <RetrySend row={r} onPending={onPending} /> : null)}
             className={TABLE_LAYOUT}
           />
-        </FillOnce>
       </div>
     </div>
   );

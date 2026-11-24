@@ -30,7 +30,7 @@ export function PageHeader({ title, meta, status, actions, eyebrow, divider = tr
     <header className={cn("flex shrink-0 items-start gap-4 px-6 pt-5 pb-4", divider && "border-b border-border", className)}>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {eyebrow && <div className="text-meta text-fg-muted">{eyebrow}</div>}
-        <h1 className={cn("min-w-0 text-display text-fg", wrap ? "text-balance" : text ? "truncate" : "flex")}>{title}</h1>
+        <h1 className={cn("min-w-0 text-display text-fg", wrap ? "text-balance" : text && "truncate")}>{title}</h1>
         {status}
         {meta && <div className="text-body text-fg-muted tabular-nums">{meta}</div>}
       </div>

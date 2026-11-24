@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtMs, fmtUsd } from "@/lib/format";
 import { benchmarkMeta, falseApprovalComparison, fraction, headline, isNotFound, pct, plural, runs } from "./copy";
-import { RevealScope, Section } from "./parts";
+import { Section } from "./parts";
 
 type Query = { isPending: boolean; isError: boolean; isFetching: boolean; error: unknown; refetch: () => unknown };
 
@@ -168,7 +168,7 @@ export function BenchmarkBars({ report }: { report: BenchmarkReport }) {
       }
       className="border-t-0"
     >
-      <RevealScope id="bars" className="max-w-4xl">
+      <div className="max-w-4xl">
         <BarComparison
           caption="v1 baseline versus v2 graph, share of referrals"
           format={(v) => pct(v)}
@@ -200,7 +200,7 @@ export function BenchmarkBars({ report }: { report: BenchmarkReport }) {
             "."
           ) : null}
         </p>
-      </RevealScope>
+      </div>
     </Section>
   );
 }

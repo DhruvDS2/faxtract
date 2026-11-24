@@ -13,18 +13,36 @@ export const TabsList = React.forwardRef<
 ));
 TabsList.displayName = "TabsList";
 
+/**
+ * Radix moves focus to a tab itself when it's clicked, which the browser counts as
+ * :focus-visible, so the ring showed after a mouse click. A pointer press marks the
+ * tab; a key press (or leaving it) unmarks it: the ring is for keyboard focus only.
+ */
 export const TabsTrigger = React.forwardRef<
   React.ComponentRef<typeof TabsPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
+>(({ className, onPointerDown, onKeyDown, onBlur, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
       "-mb-px inline-flex h-10 cursor-pointer items-center gap-1.5 border-b-2 border-transparent text-body font-medium text-fg-muted",
       "transition-[color,border-color] duration-fast ease-enter hover:text-fg",
       "data-[state=active]:border-fg data-[state=active]:text-fg disabled:cursor-not-allowed disabled:opacity-45",
+      "data-[pointer]:outline-none",
       className,
     )}
+    onPointerDown={(e) => {
+      e.currentTarget.dataset.pointer = "";
+      onPointerDown?.(e);
+    }}
+    onKeyDown={(e) => {
+      delete e.currentTarget.dataset.pointer;
+      onKeyDown?.(e);
+    }}
+    onBlur={(e) => {
+      delete e.currentTarget.dataset.pointer;
+      onBlur?.(e);
+    }}
     {...props}
   />
 ));

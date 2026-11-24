@@ -203,7 +203,7 @@ The legacy `text-xs` / `sm` / `base` / `lg` utilities map onto this scale (12, 1
 - variants: `fade`, `crossfade`, `panelSlide(side)`, `listStagger(step)` + `listItem`, `revealOnce`, `breathe`, `fadeOnly(v)`;
 - hooks: `useMotionPrefs()` → `{ reduce, fade, crossfade, panelSlide, listStagger, listItem, revealOnce, safe, transition }`;
 - shared element: `referralLayoutId(id)`;
-- transition window: `beginTransition()`, `useTransitionMarker()`;
+- transition window: `beginTransition()`, `useTransitionMarker()`, `useAfterTransitions()` (mount below-the-fold content once the crossfade is over);
 - re-exports: `m`, `AnimatePresence`, `LayoutGroup`, `useInView`, `useIsPresent`.
 
 **Route transition (V7).** `app/RouteTransition.tsx` wraps the outlet, keyed by pathname, so query-string changes don't crossfade.
@@ -221,6 +221,8 @@ import { referralLayoutId } from "@/lib/motion";
 <PageHeader title={<Morph as="span" layoutId={referralLayoutId(id)}>{name}</Morph>} … />
 ```
 - **How it runs.** When the detail page mounts a `[data-morph]` that the leaving queue page also has, `RouteTransition` shows the incoming page at once (`data-route-morph`). The name then grows from the row into the header, and the rest of the page fades in after the queue has left.
+  - `lib/morph.ts` tags the arrival once in JS: `data-morph-fade` on the branches beside the path to the name, and `data-morph-unclip` on its parent. It does this instead of using `:has()` rules, which ran on every style recalc.
+  - A target inside a scrolling pane is still clipped at the pane's edge. The queue name flying back enters its row from under the tab bar.
 - **The target must render in the first commit.** Lane B renders the header from the cached queue row (`queryClient.getQueryData(keys.referrals())`) while the full record loads.
 - **If routes are code-split,** preload the detail chunk from the queue (on mount or row hover). A target that mounts after the queue has gone just crossfades.
 - **Re-renders never re-measure,** so sorting or filtering the queue doesn't animate names. Don't pass the same `layoutDependency` to source and target.
@@ -245,6 +247,8 @@ import { referralLayoutId } from "@/lib/motion";
 | `failed` | Failed | bad | |
 
 `STATUS[s].tone` keeps the v2-ui four-tone value for old callers. New code uses `statusTone()`, `statusText()` and `isRunning()`.
+
+**A referral without a patient name:** `unnamedLabel(status)` returns "Reading the fax…" while it's processing, and "Unnamed patient" after. The queue, the orders and the detail header all use it.
 
 **Confidence.** A two-decimal number, neutral at or above the threshold, amber below it, red below 0.5. The threshold comes from `GET /health`; never hardcode 0.85. Use `<ConfidenceMeter quiet>` to fade values at or above the threshold.
 
@@ -275,7 +279,7 @@ import { referralLayoutId } from "@/lib/motion";
 | `DropdownMenu*` | Adds `DropdownMenuLabel`. |
 | `Popover*`, `Dialog*` | The dialog sits on a slate scrim and is raised. |
 | `Tooltip` / `Tip` | Inverted, small. |
-| `Tabs*` | Neutral fg underline. |
+| `Tabs*` | Neutral fg underline; the focus ring shows for keyboard focus only (Radix focuses a clicked tab itself). |
 | `Table*` | 40 px rows, hairlines on cells, sticky header, neutral selected fill. |
 | Others | `Kbd`, `Skeleton` (breathes), `ScrollArea`, `Separator`, `Toaster` / `toast` (sonner: status dot, neutral text, above the actions bar, never over the nav). |
 
@@ -283,21 +287,21 @@ import { referralLayoutId } from "@/lib/motion";
 
 | Component | Props |
 |---|---|
-| `DataTable` / `DataTableView` / `useDataTable` | `data`, `columns`, `getRowId`; sorting (`sorting`, `initialSorting`, `enableMultiSort`); `columnFilters`, `globalFilter`, `meta`; `loading` (progressive fill), `error` + `onRetry` + `errorTitle`, `empty`; `selectedId` + `onSelectedChange` + `keyboard` (j/k/Enter), `onOpen`, `quickAction(row)`; `rowTestId`, `rowProps`, `highlight` (traveling), `reveal`. Column meta: `numeric`, `truncate`, `align`, `className`, `headClassName`, `skeleton`. |
+| `DataTable` / `DataTableView` / `useDataTable` | `data`, `columns`, `getRowId`; sorting (`sorting`, `initialSorting`, `enableMultiSort`); `columnFilters`, `globalFilter`, `meta`; `loading` (progressive fill), `error` + `onRetry` + `errorTitle`, `empty`; `selectedId` + `onSelectedChange` + `keyboard` (j/k/Enter), `onOpen`, `quickAction(row)`; `rowTestId`, `rowProps`, `highlight` (traveling), `reveal` (once per mount; later rows show at once, with no row re-render). Column meta: `numeric`, `truncate` (a `[data-morph]` inside is never clipped), `align`, `className`, `headClassName`, `skeleton`. |
 | `StatusPill` / `StatusDot` | `tone` (ok, warn, bad, rejected, idle), `running`, `detail` |
 | `StatusBadge` | `status` |
 | `ReferralStatusPill` | `status`, `ack` |
 | `AckBadge` | `code` |
 | `StatusLine` | `tone`, `children` (the sentence), `detail`, `action`, `running`: one quiet header line |
-| `ConfidenceMeter` | `value`, `threshold?`, `bar?`, `quiet?`. `Confidence` keeps the v2 API. |
+| `ConfidenceMeter` | `value`, `threshold?` (given, the meter doesn't subscribe to `/health`; pass it in tables), `bar?`, `quiet?`. `Confidence` keeps the v2 API. |
 | `Accordion` | `value` / `defaultValue` / `onValueChange`; one open at a time. |
-| `AccordionItem` | `value`, `title`, `summary` (right side), `disabled`. 320 ms height and opacity. |
+| `AccordionItem` | `value`, `title`, `summary` (right side), `action` (beside the header, outside the trigger), `disabled`. 320 ms height and opacity. |
 | `SplitPane` | `left`, `right`, `defaultPct`, `min`, `max`, `storageKey`, `label`; drag, arrow keys, double-click to reset. |
 | `CodeViewer` | `code`, `format` (hl7, x12, text, auto), `lineNumbers` (off by default), `copy`, `label`, `wrap`, `capHeight`. `Code`, plus `CodeBlock({ lines })` kept from v2. |
 | `StatRow` | `stats: { id, value, label, comparison? }[]`, on hairline rules |
-| `CountThrough` | `value`, `format`: 600 ms once in view, 200 ms through changes, final value under reduced motion |
-| `BarComparison` | `series`, `rows: { id, label, values, display?, max? }[]`, `format`, `caption`: two neutral shades, grows once |
-| `PageHeader` | `title` (display), `meta`, `status`, `actions`, `eyebrow`, `divider` |
+| `CountThrough` | `value`, `format`, `initial={false}` (no mount reveal), `from` (count from the last shown value): 600 ms once in view, 200 ms through changes, final value under reduced motion |
+| `BarComparison` | `series`, `rows: { id, label, values, display?, max?, plain? }[]` (`plain`: a value row with no bars, e.g. latency), `format`, `caption`: two neutral shades, grows once |
+| `PageHeader` | `title` (display; text truncates, a node is never clipped by the heading), `wrap` (a sentence title wraps), `meta`, `status`, `actions`, `eyebrow`, `divider` |
 | `KeyValue` | `label`, `children` |
 | `EmptyState` | `title`, `hint`, `action`, `align` |
 | `ErrorState` | `error`, `onRetry`, `title`, `align`. A plain-language cause plus faint technical detail; `describeError()` is exported. |
@@ -311,7 +315,7 @@ import { referralLayoutId } from "@/lib/motion";
 - **Top bar:**
   - the PIPELINE in quiet mono (`data-testid="pipeline-badge"`);
   - health as words (`health-ris`, `health-db`), with "RIS down" in red;
-  - "The API isn't responding" when `/health` fails;
+  - before `/health` answers, "Checking the API…"; if it fails or takes more than 4 s, "API not responding" in red (`health-api`);
   - the theme toggle.
 - **`RouteTransition`** wraps the outlet.
 
