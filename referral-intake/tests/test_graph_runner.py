@@ -258,3 +258,25 @@ def test_extraction_failure_is_failed(graph_db, tmp_path):
 def test_start_passes_replay_pace(graph_db, ris_server, corpus):
     record = start(service.GraphRunner(), corpus, "referral_002", replay_pace_s=0.2)
     assert record.stage_timings_ms["extract"] >= 200
+
+
+def test_runners_on_concurrent_threads(graph_db, ris_server, corpus):
+    """The API runs start() on background threads and resume() on request threads,
+    all sharing one connection pool and one compiled graph."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    names = ["referral_002", "referral_005", "referral_013", "referral_058", "referral_011", "referral_016"]
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        records = list(pool.map(lambda n: start(service.GraphRunner(), corpus, n), names))
+    by_name = dict(zip(names, records))
+    assert by_name["referral_013"].status == by_name["referral_058"].status == "needs_review"
+    assert all(by_name[n].status == "sent_to_ris" for n in ("referral_002", "referral_005", "referral_011", "referral_016"))
+    for record in records:  # every referral's trace is its own, numbered 1..n
+        seqs = [e.seq for e in trace.list_for(record.id)]
+        assert seqs == list(range(1, len(seqs) + 1))
+
+    paused = [by_name["referral_013"], by_name["referral_058"]]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        done = list(pool.map(lambda r: service.GraphRunner().resume(r, ReviewAction(kind="approve")), paused))
+    assert [r.status for r in done] == ["sent_to_ris", "sent_to_ris"]
+    assert len(ris_orders(ris_server)) == 6
