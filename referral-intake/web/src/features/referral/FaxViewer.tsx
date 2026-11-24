@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { ChevronLeft, ChevronRight, ExternalLink, Eye, EyeOff, Minus, Plus } from "lucide-react";
 import type { Box } from "@/contracts";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { FaxPageSkeleton } from "./FaxPageSkeleton";
 import { Tip } from "@/components/ui/tooltip";
 import { DURATION_MS, EASE, beginTransition, useMotionPrefs } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -264,7 +264,11 @@ export default function FaxViewer({ url, boxes, selectedField, focus, hoveredFie
             setNumPages(doc.numPages);
             setCurrent(0);
           }}
-          loading={<Skeleton className="rounded-none" style={{ width: fitWidth || undefined, aspectRatio: `${1 / LETTER}` }} />}
+          loading={
+            <div className="p-4" aria-busy aria-label="Loading the fax">
+              <FaxPageSkeleton style={fitWidth ? { width: fitWidth, maxWidth: "none" } : undefined} />
+            </div>
+          }
           error={
             <div className="flex flex-col items-center gap-1 px-6 py-16 text-center" role="alert">
               <div className="text-body font-medium text-fg">Couldn't load the fax</div>
@@ -308,7 +312,7 @@ export default function FaxViewer({ url, boxes, selectedField, focus, hoveredFie
                       })
                     }
                     onRenderSuccess={() => i === 0 && setRendered(true)}
-                    loading={<Skeleton className="rounded-none" style={{ width: fitWidth, height: Math.round(fitWidth * (aspects[i] ?? LETTER)) }} />}
+                    loading={<FaxPageSkeleton className="aspect-auto max-w-none shadow-none" style={{ width: fitWidth, height: Math.round(fitWidth * (aspects[i] ?? LETTER)) }} />}
                   />
                 </div>
                 <div className="absolute inset-0">

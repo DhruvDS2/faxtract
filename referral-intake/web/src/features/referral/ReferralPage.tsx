@@ -7,12 +7,12 @@ import { useCorrections, useHealth, useReferral, useTrace } from "@/api/queries"
 import { SplitPane } from "@/components/SplitPane";
 import { EmptyState, ErrorState } from "@/components/States";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useHotkeys } from "@/lib/hotkeys";
 import { DURATION_MS, useMotionPrefs } from "@/lib/motion";
 import { STATUS, unnamedLabel } from "@/lib/status";
 import { DetailHeader, useBackToQueue } from "./DetailHeader";
 import type { FocusRequest } from "./FaxViewer";
+import { FaxPageSkeleton } from "./FaxPageSkeleton";
 import { fieldMeta } from "./fields";
 import { FieldsPanel, FieldsSkeleton, rowId } from "./FieldsPanel";
 import { notify } from "./notify";
@@ -303,17 +303,7 @@ function FaxFallback() {
     <div className="flex h-full flex-col bg-surface-2" data-testid="fax-viewer" aria-busy aria-label="Loading the fax">
       <div className="h-10 shrink-0 border-b border-border bg-bg" />
       <div className="min-h-0 flex-1 overflow-hidden p-4">
-        <div className="mx-auto flex aspect-[8.5/11] w-full max-w-2xl flex-col gap-3 bg-bg p-8 shadow-float">
-          <Skeleton className="h-3 w-1/3" />
-          <Skeleton className="h-2 w-1/4" />
-          <div className="h-4" />
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <div key={i} className="flex gap-6">
-              <Skeleton className="h-2 w-1/5" />
-              <Skeleton className="h-2 w-2/5" />
-            </div>
-          ))}
-        </div>
+        <FaxPageSkeleton />
       </div>
     </div>
   );
