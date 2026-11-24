@@ -11,13 +11,22 @@ import { fmtMs, fmtUsd } from "@/lib/format";
 import { benchmarkMeta, falseApprovalComparison, fraction, headline, isNotFound, pct, plural, runs } from "./copy";
 import { RevealScope, Section } from "./parts";
 
-type Query = { isPending: boolean; isError: boolean; error: unknown; refetch: () => unknown };
+type Query = { isPending: boolean; isError: boolean; isFetching: boolean; error: unknown; refetch: () => unknown };
 
 // PageHeader truncates its title to one line; the headline is a sentence, so let it wrap.
 const WRAP_TITLE = "[&_h1]:whitespace-normal";
 
 /** The page's display line: the result as a sentence, or what's missing and how to make it. */
-export function BenchmarkHeader({ query, report }: { query: Query; report: BenchmarkReport | undefined }) {
+export function BenchmarkHeader({
+  query,
+  report,
+  onRetry,
+}: {
+  query: Query;
+  report: BenchmarkReport | undefined;
+  /** Retry everything that failed on the page (one Retry, not one per section). */
+  onRetry: () => void;
+}) {
   if (report)
     return (
       <PageHeader
@@ -52,7 +61,7 @@ export function BenchmarkHeader({ query, report }: { query: Query; report: Bench
           </>
         }
         actions={
-          <Button size="sm" onClick={() => void query.refetch()}>
+          <Button size="sm" onClick={onRetry} loading={query.isFetching} loadingText="Retrying">
             Retry
           </Button>
         }
@@ -62,7 +71,7 @@ export function BenchmarkHeader({ query, report }: { query: Query; report: Bench
   return (
     <div className="flex flex-col gap-1 px-6 pt-5 pb-4" aria-busy="true" aria-label="Loading the benchmark">
       <Skeleton className="my-1 h-5 w-1/2 max-w-xl" />
-      <Skeleton className="my-1.5 h-3 w-1/3 max-w-sm" />
+      <Skeleton className="my-1 h-3 w-1/3 max-w-sm" />
     </div>
   );
 }
@@ -118,7 +127,7 @@ export function StatsSkeleton() {
   const cell = (id: string) => ({
     id,
     value: <Skeleton className="my-1.5 h-4 w-20" />,
-    label: <Skeleton className="my-1.5 h-2.5 w-36" />,
+    label: <Skeleton className="my-1 h-3 w-36" />,
     comparison: <Skeleton className="my-1 h-2 w-16" />,
   });
   return <StatRow className="px-6" aria-busy="true" stats={["a", "b", "c", "d"].map(cell)} />;

@@ -76,8 +76,11 @@ export function FieldAccuracy({
   query,
   critical,
   modelHint,
+  retryInHeader = false,
 }: {
   query: Query;
+  /** The page header already offers Retry (the benchmark failed too): don't repeat it here. */
+  retryInHeader?: boolean;
   /** Fields that gate auto-approval (from the benchmark, when it loaded). */
   critical: string[];
   /** What the benchmark says about the model, when the extraction artifact doesn't record it. */
@@ -111,7 +114,13 @@ export function FieldAccuracy({
             </p>
           </div>
         ) : (
-          <ErrorState error={query.error} title="Couldn't load the extraction eval" onRetry={() => void query.refetch()} align="start" className="px-0 py-0" />
+          <ErrorState
+            error={query.error}
+            title="Couldn't load the extraction eval"
+            onRetry={retryInHeader ? undefined : () => void query.refetch()}
+            align="start"
+            className="px-0 py-0"
+          />
         )}
       </Section>
     );
