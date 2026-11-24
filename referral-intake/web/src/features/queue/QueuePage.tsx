@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { SortingState } from "@tanstack/react-table";
 import type { ReferralStatus, ReferralSummary } from "@/contracts";
-import { isSettling, useReferrals } from "@/api/queries";
+import { isSettling, useHealth, useReferrals } from "@/api/queries";
 import { DataTable } from "@/components/DataTable";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, describeError } from "@/components/States";
@@ -10,7 +10,6 @@ import { StatusLine } from "@/components/StatusLine";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DURATION_MS, STAGGER, STAGGER_MAX_ITEMS } from "@/lib/motion";
 import { STATUS } from "@/lib/status";
 import { cn } from "@/lib/utils";
 import { CountChange } from "./CountChange";
@@ -19,6 +18,7 @@ import { QuickAction } from "./QuickAction";
 import { queueMemory } from "./queueMemory";
 import { StatusTabs, type StatusTab } from "./StatusTabs";
 import { UploadButton } from "./UploadButton";
+import { FillOnce } from "./FillOnce";
 import { useNow } from "./useNow";
 
 const ALL = "all";
@@ -51,16 +51,14 @@ const EMPTY_TAB: Partial<Record<ReferralStatus, { title: string; hint: string }>
 const TABLE_LAYOUT =
   "[&_table]:table-fixed [&_th:last-child]:w-28 [&_td:first-child]:pl-6 [&_th:first-child]:pl-6 [&_td:last-child]:pr-6 [&_th:last-child]:pr-6";
 
-/** After the first progressive fill, rows that appear later (filters, new faxes) show at once. */
-const REVEAL_WINDOW_MS = STAGGER.row * STAGGER_MAX_ITEMS * 1000 + DURATION_MS.state;
 
 const matchesPayor = (r: ReferralSummary, payor: string) => (payor === NO_PAYOR ? !r.payor_name : r.payor_name === payor);
-const isToday = (iso: string, now: number) => new Date(iso).toDateString() === new Date(now).toDateString();
 const clock = (t: number) => new Date(t).toTimeString().slice(0, 5);
 
 /** "57 received today · 20 sent to RIS · 3 RIS errors · 4 rejected": counts that aren't zero, from the API. */
 function metaLine(data: ReferralSummary[], counts: Partial<Record<ReferralStatus, number>>, now: number) {
-  const today = data.filter((r) => isToday(r.created_at, now)).length;
+  const midnight = new Date(now).setHours(0, 0, 0, 0);
+  const today = data.filter((r) => Date.parse(r.created_at) >= midnight).length;
   const received =
     today === data.length && today > 0 ? `${today} received today` : today > 0 ? `${data.length} received, ${today} today` : `${data.length} received`;
   const working = data.filter((r) => isSettling(r.status)).length;
@@ -130,13 +128,6 @@ export function QueuePage() {
     return (data ?? []).filter(matches).map((r) => (pinned[r.id] ? { ...r, sortStatus: pinned[r.id] } : r));
   }, [data, statusFilter, payorFilter, pinned]);
 
-  // progressive fill once per visit (Paradigm); afterwards rows appear without a stagger
-  const [filled, setFilled] = useState(false);
-  useEffect(() => {
-    if (query.isPending || filled) return;
-    const t = window.setTimeout(() => setFilled(true), REVEAL_WINDOW_MS);
-    return () => window.clearTimeout(t);
-  }, [query.isPending, filled]);
 
   const setFilter = (key: "status" | "payor", value: string) => {
     const next = new URLSearchParams(params);
@@ -175,7 +166,10 @@ export function QueuePage() {
     if (selectedId) scroller.current?.querySelector(`[data-id="${CSS.escape(selectedId)}"]`)?.scrollIntoView({ block: "center" });
   }, [data, selectedId]);
 
-  const meta = useMemo<QueueTableMeta>(() => ({ now, onOpen: remember, selectedId }), [now, remember, selectedId]);
+  const threshold = useHealth().data?.threshold;
+  const meta = useMemo<QueueTableMeta>(() => ({ now, onOpen: remember, selectedId, threshold }), [now, remember, selectedId, threshold]);
+
+  const summaryLine = useMemo(() => (data ? metaLine(data, counts, now) : null), [data, counts, now]);
 
   // ---------- header ----------
   let title: React.ReactNode;
@@ -189,7 +183,7 @@ export function QueuePage() {
       ) : (
         "Nothing needs review"
       );
-    metaText = data.length ? metaLine(data, counts, now) : null;
+    metaText = data.length ? summaryLine : null;
   } else if (query.isError) {
     title = "Couldn't load referrals";
   } else {
@@ -276,33 +270,35 @@ export function QueuePage() {
       </div>
 
       <div ref={scroller} tabIndex={-1} aria-label="Referrals" className="min-h-0 flex-1 overflow-auto focus-visible:outline-none">
-        <DataTable
-          data={rows}
-          columns={columns}
-          getRowId={(r) => r.id}
-          sorting={sorting}
-          onSortingChange={setSorting}
-          enableMultiSort
-          meta={meta}
-          testId="queue-table"
-          rowTestId="queue-row"
-          label="Referrals"
-          rowProps={(row) => ({ "data-status": row.original.status, className: filled ? "animate-none" : undefined })}
-          loading={query.isPending}
-          loadingRows={12}
-          error={query.isError && !data ? query.error : undefined}
-          onRetry={() => void query.refetch()}
-          empty={empty}
-          selectedId={selectedId}
-          onSelectedChange={select}
-          keyboard
-          onOpen={(r, e) => {
-            if (e && (e.metaKey || e.ctrlKey)) window.open(`/referrals/${r.id}`, "_blank", "noopener");
-            else open(r.id);
-          }}
-          quickAction={(r) => <QuickAction row={r} onOpen={remember} onRetryStart={pin} />}
-          className={TABLE_LAYOUT}
-        />
+        <FillOnce ready={!query.isPending}>
+          <DataTable
+            data={rows}
+            columns={columns}
+            getRowId={(r) => r.id}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            enableMultiSort
+            meta={meta}
+            testId="queue-table"
+            rowTestId="queue-row"
+            label="Referrals"
+            rowProps={(row) => ({ "data-status": row.original.status })}
+            loading={query.isPending}
+            loadingRows={12}
+            error={query.isError && !data ? query.error : undefined}
+            onRetry={() => void query.refetch()}
+            empty={empty}
+            selectedId={selectedId}
+            onSelectedChange={select}
+            keyboard
+            onOpen={(r, e) => {
+              if (e && (e.metaKey || e.ctrlKey)) window.open(`/referrals/${r.id}`, "_blank", "noopener");
+              else open(r.id);
+            }}
+            quickAction={(r) => <QuickAction row={r} onOpen={remember} onRetryStart={pin} />}
+            className={TABLE_LAYOUT}
+          />
+        </FillOnce>
       </div>
     </div>
   );

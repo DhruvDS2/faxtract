@@ -3,13 +3,12 @@ import { Link } from "react-router-dom";
 import type { ColumnDef, SortingFn, SortingState } from "@tanstack/react-table";
 import type { ReferralStatus, ReferralSummary } from "@/contracts";
 import { Code } from "@/components/Code";
-import { ConfidenceMeter } from "@/components/Confidence";
 import { Morph } from "@/components/Morph";
 import { ReferralStatusPill } from "@/components/StatusBadge";
 import { Tip } from "@/components/ui/tooltip";
-import { fmtAge, fmtDateTime } from "@/lib/format";
+import { fmtAge, fmtConfidence, fmtDateTime } from "@/lib/format";
 import { referralLayoutId } from "@/lib/motion";
-import { STATUS_ORDER, statusText } from "@/lib/status";
+import { STATUS_ORDER, confidenceTone, statusText } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,8 +17,8 @@ import { cn } from "@/lib/utils";
  */
 export type QueueRow = ReferralSummary & { sortStatus?: ReferralStatus };
 
-/** Table meta: the clock for relative ages, what a row click does, and the keyboard selection. */
-export type QueueTableMeta = { now: number; onOpen: (id: string) => void; selectedId: string | null };
+/** Table meta: the clock for relative ages, what a row click does, the keyboard selection, and the server's confidence threshold. */
+export type QueueTableMeta = { now: number; onOpen: (id: string) => void; selectedId: string | null; threshold: number | undefined };
 
 const statusRank = (s: ReferralStatus) => {
   const i = STATUS_ORDER.indexOf(s);
@@ -54,14 +53,12 @@ function StatusCell({ row }: { row: QueueRow }) {
 }
 
 /**
- * The patient name, and the ONTO shared element: it grows into the referral header
- * (Lane B wraps the target). A row only carries the <Morph> once it can be opened
- * by hand (pointer over it, focus in it, or keyboard-selected): mounting a motion
- * component on all 57 rows made the queue's mount a long task during the route
- * crossfade. The link stays mounted, so focus never moves.
+ * True once the cell's row has been pointed at or focused (or `armed`). Per-row
+ * extras that only matter under the pointer (the shared element, the tooltip) mount
+ * then, not for every row at once: mounting them on all rows made the queue's mount
+ * a long task inside the route crossfade.
  */
-function PatientName({ row, armed }: { row: QueueRow; armed: boolean }) {
-  const ref = useRef<HTMLElement>(null);
+function useRowTouched(ref: React.RefObject<HTMLElement | null>, armed = false) {
   const [touched, setTouched] = useState(false);
   const live = armed || touched;
   useEffect(() => {
@@ -75,7 +72,19 @@ function PatientName({ row, armed }: { row: QueueRow; armed: boolean }) {
       tr.removeEventListener("pointerenter", arm);
       tr.removeEventListener("focusin", arm);
     };
-  }, [live]);
+  }, [live, ref]);
+  return live;
+}
+
+/**
+ * The patient name, and the ONTO shared element: it grows into the referral header
+ * (Lane B wraps the target). A row carries the <Morph> once it can be opened by hand:
+ * pointer over it, focus in it, or keyboard-selected. The link stays mounted, so
+ * focus never moves.
+ */
+function PatientName({ row, armed }: { row: QueueRow; armed: boolean }) {
+  const ref = useRef<HTMLElement>(null);
+  const live = useRowTouched(ref, armed);
   const name = row.patient_name ?? <span className="font-normal text-fg-faint">Unknown patient</span>;
   const cls = "min-w-0 truncate group-hover/name:underline";
   return live ? (
@@ -87,6 +96,35 @@ function PatientName({ row, armed }: { row: QueueRow; armed: boolean }) {
       {name}
     </span>
   );
+}
+
+/**
+ * Confidence as a plain number: faint at or above the server's threshold, amber below
+ * it, red below 0.5. Renders what <ConfidenceMeter quiet> does, with the threshold read
+ * once by the page: ConfidenceMeter runs its own /health query per row (one observer
+ * and one refetch timer per row), which weighed on the queue's mount.
+ */
+function Confidence({ value, threshold }: { value: number; threshold: number | undefined }) {
+  const tone = threshold == null ? "idle" : confidenceTone(value, threshold);
+  const low = tone === "warn" || tone === "bad";
+  const label = `Confidence ${fmtConfidence(value)}${threshold == null ? "" : low ? `, below the ${threshold} threshold` : `, at or above the ${threshold} threshold`}`;
+  return (
+    <span className={cn("tabular-nums", tone === "warn" ? "text-warn" : tone === "bad" ? "text-bad" : "text-fg-faint")} title={label} aria-label={label} data-tone={tone}>
+      {fmtConfidence(value)}
+    </span>
+  );
+}
+
+/** Relative age; the absolute time is in a tooltip, mounted once the row is pointed at. */
+function Received({ at, now }: { at: string; now: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const live = useRowTouched(ref);
+  const age = (
+    <span ref={ref} className="text-fg-muted">
+      {fmtAge(at, now)}
+    </span>
+  );
+  return live ? <Tip content={`Received ${fmtDateTime(at)}`}>{age}</Tip> : age;
 }
 
 export const columns: ColumnDef<QueueRow>[] = [
@@ -141,8 +179,8 @@ export const columns: ColumnDef<QueueRow>[] = [
     accessorFn: (r) => r.min_confidence ?? undefined,
     sortUndefined: "last",
     meta: { numeric: true, className: "w-24", headClassName: "w-24", skeleton: "w-8" },
-    // a plain number: faint at or above the server's threshold, toned below it
-    cell: ({ row }) => (row.original.min_confidence == null ? <Dash /> : <ConfidenceMeter value={row.original.min_confidence} quiet />),
+    cell: ({ row, table }) =>
+      row.original.min_confidence == null ? <Dash /> : <Confidence value={row.original.min_confidence} threshold={(table.options.meta as QueueTableMeta).threshold} />,
   },
   {
     id: "status",
@@ -159,13 +197,6 @@ export const columns: ColumnDef<QueueRow>[] = [
     // ascending = newest first
     accessorFn: (r) => -Date.parse(r.created_at),
     meta: { numeric: true, className: "w-20", headClassName: "w-20", skeleton: "w-12" },
-    cell: ({ row, table }) => {
-      const now = (table.options.meta as QueueTableMeta).now;
-      return (
-        <Tip content={`Received ${fmtDateTime(row.original.created_at)}`}>
-          <span className="text-fg-muted">{fmtAge(row.original.created_at, now)}</span>
-        </Tip>
-      );
-    },
+    cell: ({ row, table }) => <Received at={row.original.created_at} now={(table.options.meta as QueueTableMeta).now} />,
   },
 ];

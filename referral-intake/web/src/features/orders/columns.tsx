@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { createColumnHelper } from "@tanstack/react-table";
 import type { ReferralSummary, RisOrderRow } from "@/contracts";
@@ -44,6 +44,36 @@ function StatusCell({ row, sending }: { row: RisOrderRow; sending: boolean }) {
       )}
     </div>
   );
+}
+
+/** True once the cell's row has been pointed at or focused: the tooltip mounts then, not for every row at once. */
+function useRowTouched(ref: React.RefObject<HTMLElement | null>) {
+  const [touched, setTouched] = useState(false);
+  useEffect(() => {
+    if (touched) return;
+    const tr = ref.current?.closest("tr");
+    if (!tr) return;
+    const arm = () => setTouched(true);
+    tr.addEventListener("pointerenter", arm);
+    tr.addEventListener("focusin", arm);
+    return () => {
+      tr.removeEventListener("pointerenter", arm);
+      tr.removeEventListener("focusin", arm);
+    };
+  }, [touched, ref]);
+  return touched;
+}
+
+/** Relative time of the last send; the absolute time is in a tooltip. */
+function LastAttempt({ at, now }: { at: string; now: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const live = useRowTouched(ref);
+  const age = (
+    <span ref={ref} className="text-fg-muted">
+      {fmtAge(at, now)}
+    </span>
+  );
+  return live ? <Tip content={`Last sent ${fmtDateTime(at)}`}>{age}</Tip> : age;
 }
 
 /** Sorting by status puts what needs a retry first. */
@@ -107,14 +137,6 @@ export const columns = [
     header: "Last attempt",
     sortingFn: "alphanumeric",
     meta: { numeric: true, className: "w-28", headClassName: "w-28", skeleton: "w-12" },
-    cell: (c) => {
-      const at = c.row.original.sent_at;
-      if (!at) return <Dash />;
-      return (
-        <Tip content={`Last sent ${fmtDateTime(at)}`}>
-          <span className="text-fg-muted">{fmtAge(at, metaOf(c.table).now)}</span>
-        </Tip>
-      );
-    },
+    cell: (c) => (c.row.original.sent_at ? <LastAttempt at={c.row.original.sent_at} now={metaOf(c.table).now} /> : <Dash />),
   }),
 ];
