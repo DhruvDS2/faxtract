@@ -587,6 +587,10 @@ def cmd_up(args) -> int:
     for i, (name, fn) in enumerate(steps, 1):
         say(f"[{i}/{len(steps) + 1}] {name}")
         t = time.monotonic()
+        if name == "seed" and any(f.startswith("services:") for f in failures):
+            say("    skipped: the services did not start (never seed a server the demo did not start)")
+            failures.append("seed: skipped because the services step failed")
+            continue
         try:
             fn()
         except DemoError as exc:

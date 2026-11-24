@@ -383,3 +383,13 @@ def test_pickers():
     ids = {r["id"] for r in ok}
     assert all(not r["flags"] and r["eligibility"]["status"] == "active_in_network" for r in ok)
     assert f"{0:08x}" not in ids and f"{19:08x}" not in ids  # fault name, blocking flag
+
+
+def test_a_foreign_server_on_the_port_is_refused(corpus):
+    def handler(request):
+        return httpx.Response(200, json={"status": "ok", "service": "something-else"})
+
+    api = Api(httpx.Client(transport=httpx.MockTransport(handler), base_url="http://127.0.0.1:8000"),
+              sleep=lambda s: None)
+    with pytest.raises(SeedError, match="not this project's Health"):
+        seed(api, corpus, log=lambda m: None)

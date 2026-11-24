@@ -108,7 +108,14 @@ class Api:
 
     def health(self) -> dict:
         try:
-            return self._call("GET", "/health").json()
+            r = self._call("GET", "/health")
+            body = r.json()
+            if not isinstance(body, dict) or not {"pipeline", "ris", "db"} <= set(body):
+                raise SeedError(f"GET {self.base}/health is not this project's Health response "
+                                f"(got {r.text[:120]!r}); is another server on that port?")
+            return body
+        except ValueError as exc:
+            raise SeedError(f"GET {self.base}/health did not return JSON; is another server on that port?") from exc
         except ApiError as exc:
             if exc.status == 404:
                 raise SeedError(
