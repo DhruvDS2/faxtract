@@ -63,13 +63,18 @@ test("demo: upload -> graph pauses -> fix -> approve -> ACK -> evals", async ({ 
   // 5. the graph shows the resumed path through order
   await page.goto(`/graph?referral=${id}`);
   await expect(node(page, "order")).toHaveAttribute("data-state", "done");
-  await beat(page, 2000);
+  await beat(page, 3000);
   await page.screenshot({ path: `${SCREENS}/demo-05-graph-sent.png` });
 
   // 6. evals: v1 vs v2
   await page.goto("/evals");
   await expect(page.getByTestId("evals-benchmark")).toBeVisible();
   await expect(page.getByTestId("evals-source")).toContainText("benchmark_v1_v2.json");
-  await beat(page, 2500);
+  await beat(page, 3000);
   await page.screenshot({ path: `${SCREENS}/demo-06-evals.png`, fullPage: true });
+  // walk down to the false-approval analysis for the video
+  await page.getByTestId("evals-false-approvals").scrollIntoViewIfNeeded();
+  await beat(page, 3500);
+  await page.getByTestId("evals-field-accuracy").scrollIntoViewIfNeeded();
+  await beat(page, 2500);
 });

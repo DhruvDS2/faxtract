@@ -49,13 +49,29 @@ export function ArtifactState({
 
 export const isNotFound = (e: unknown) => e instanceof ApiError && e.status === 404;
 
-/** Render an arbitrary JSON value from an artifact: scalars as text, the rest as compact JSON. */
+const HASH = /^[0-9a-f]{16,}$/i;
+
+const scalar = (v: unknown) =>
+  v === null || v === undefined ? "-" : Array.isArray(v) ? v.map(scalar).join(", ") : typeof v === "object" ? JSON.stringify(v) : String(v);
+
+/** Render an arbitrary JSON value from an artifact: hashes shortened (full value on hover),
+ * lists joined, objects as one "key: value" line each. */
 export function Value({ v }: { v: unknown }) {
   if (v === null || v === undefined) return <span className="text-fg-faint">-</span>;
   if (typeof v === "number") return <span className="tabular-nums">{v}</span>;
-  if (typeof v === "string") return <span>{v}</span>;
   if (typeof v === "boolean") return <span>{v ? "yes" : "no"}</span>;
-  return <Code className="break-all">{JSON.stringify(v)}</Code>;
+  if (typeof v === "string")
+    return HASH.test(v) ? <Code title={v}>{v.slice(0, 12)}…</Code> : <span className="break-words">{v}</span>;
+  if (Array.isArray(v)) return <span className="break-words">{scalar(v)}</span>;
+  return (
+    <ul className="space-y-0.5">
+      {Object.entries(v as Record<string, unknown>).map(([k, x]) => (
+        <li key={k} className="break-words">
+          <Code>{k}</Code> <span className="text-fg-muted">{scalar(x)}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export const pct = (x: number | null | undefined, digits = 1) => (x == null ? "-" : `${(x * 100).toFixed(digits)}%`);
