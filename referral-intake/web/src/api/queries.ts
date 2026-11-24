@@ -23,7 +23,7 @@ export const keys = {
 
 const LIVE = 1000; // ms between polls while something is running
 
-const isSettling = (status: ReferralStatus | undefined) =>
+export const isSettling = (status: ReferralStatus | undefined) =>
   status === "processing" || status === "approved" || status === "auto_approved";
 
 export const useHealth = () =>

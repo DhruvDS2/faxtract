@@ -59,8 +59,10 @@ Fonts are bundled from npm (`@fontsource/*`); no CDN. Numeric columns use `tabul
 
 | Token | Value |
 |---|---|
-| `--radius` | 6 px (`rounded-md`); pills use `rounded-full` only for status badges and counts |
+| `--radius` | 6 px (`rounded-md`); pills use `rounded-full` only for status badges and counts; `rounded-sm` (4 px) only for tiny glyph-sized marks (`Kbd`, meter ticks) |
 | `--shadow-float` | `0 4px 16px rgb(0 0 0 / 0.08)`, for popovers, menus, dialogs and toasts only |
+
+**Toasts** sit bottom-right, 64 px up, so they never cover a sticky actions bar.
 
 **Focus.** A 2 px ring in `--accent` at 35% opacity with a 1 px offset (`focus-visible` only).
 

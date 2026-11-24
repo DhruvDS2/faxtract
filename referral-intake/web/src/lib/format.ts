@@ -29,5 +29,8 @@ export const fmtAge = (iso: string | null | undefined, now = Date.now()) => {
 
 export const humanize = (field: string) => field.replace(/_/g, " ").replace(/^patient /, "").replace(/\bnpi\b/i, "NPI").replace(/\bcpt\b/i, "CPT").replace(/\bicd10\b/i, "ICD-10");
 
-/** HL7 / X12 text arrives \r- or ~-separated; show one segment per line. */
+/** X12 (270/271): segments end with "~"; show one per line. Not for HL7 -- its MSH encoding characters contain "~". */
 export const segments = (msg: string | null | undefined) => (msg ?? "").split(/\r\n|\r|\n|~/).filter(Boolean);
+
+/** HL7 v2: segments are separated by \r. */
+export const hl7Segments = (msg: string | null | undefined) => (msg ?? "").split(/\r\n|\r|\n/).filter(Boolean);

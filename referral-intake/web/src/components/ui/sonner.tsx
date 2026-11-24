@@ -4,6 +4,7 @@ export function Toaster() {
   return (
     <Sonner
       position="bottom-right"
+      offset={{ bottom: 64, right: 16 }}
       toastOptions={{
         classNames: {
           toast: "!rounded-md !border !border-border !bg-bg !text-fg !shadow-float !text-sm",
