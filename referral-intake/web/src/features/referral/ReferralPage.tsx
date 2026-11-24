@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHotkeys } from "@/lib/hotkeys";
 import { DURATION_MS, useMotionPrefs } from "@/lib/motion";
-import { STATUS } from "@/lib/status";
+import { STATUS, unnamedLabel } from "@/lib/status";
 import { DetailHeader, useBackToQueue } from "./DetailHeader";
 import type { FocusRequest } from "./FaxViewer";
 import { fieldMeta } from "./fields";
@@ -129,7 +129,11 @@ function ReferralView({ id, record, summary }: ViewProps) {
 
   const reasons = useMemo(() => (record ? reviewReasons(record) : []), [record]);
   const blocking = useMemo(() => blockingReasons(actions.blocking), [actions.blocking]);
-  const name = record ? (patientName(record) ?? "Unnamed patient") : (summary?.patient_name ?? null);
+  const name = record
+    ? (patientName(record) ?? unnamedLabel(record.status))
+    : summary
+      ? (summary.patient_name ?? unnamedLabel(summary.status))
+      : null;
   const status = record ? statusView(record, reasons.length, trace) : summary ? summaryView(summary) : null;
   const panelValue = panel ?? defaultPanel(record);
 

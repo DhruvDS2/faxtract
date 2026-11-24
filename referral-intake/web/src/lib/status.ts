@@ -50,3 +50,10 @@ export function statusText(s: ReferralStatus, ack?: AckCode | null): { label: st
   if (s === "ris_error") return { label: ack && ack !== "AA" ? `RIS rejected · ${ack}` : "RIS error · no ACK", tone: "bad" };
   return { label: STATUS[s].label, tone: statusTone(s) };
 }
+
+/**
+ * What to call a referral that has no patient name: while the pipeline is still
+ * reading the fax, "Reading the fax…"; once it has, "Unnamed patient". The queue,
+ * the orders and the detail header all use this, so the name never changes words.
+ */
+export const unnamedLabel = (status: ReferralStatus) => (status === "processing" ? "Reading the fax…" : "Unnamed patient");
