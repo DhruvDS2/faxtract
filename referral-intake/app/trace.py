@@ -2,7 +2,7 @@
 
 Runners call emit(); the API serves list_for(). Shape: app.contracts.TraceEvent.
 """
-from sqlalchemy import JSON, Column, DateTime, Float, Integer, String, Text, func, select
+from sqlalchemy import JSON, Column, DateTime, Float, Integer, String, Text, func, select, text
 
 from app.contracts import TraceEvent
 from app.db import Base, SessionLocal
@@ -35,8 +35,12 @@ _FIELDS = [c for c in TraceEvent.model_fields]
 
 
 def emit(event: TraceEvent) -> TraceEvent:
-    """Persist one event; assigns seq = next number for that referral."""
+    """Persist one event; assigns seq = next number for that referral.
+
+    A transaction-scoped advisory lock per referral serialises concurrent
+    writers (API thread + runner) so seq never repeats."""
     with SessionLocal() as session:
+        session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:rid))"), {"rid": event.referral_id})
         current = session.execute(
             select(func.max(TraceEventRow.seq)).where(TraceEventRow.referral_id == event.referral_id)
         ).scalar()
